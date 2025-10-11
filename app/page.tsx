@@ -272,7 +272,9 @@ export default function CyberSkopeLanding() {
             <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
               <Database className="w-10 h-10 text-cyan-400 mb-4" />
               <h3 className="text-xl font-semibold mb-3">Threat Intelligence</h3>
-              <p className="text-slate-400">Real-time IOC enrichment using AbuseIPDB, VirusTotal, and MISP feeds.</p>
+              <p className="text-slate-400">
+                Real-time threat intelligence enrichment using multiple industry-leading feeds and IOC databases.
+              </p>
             </Card>
 
             <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
