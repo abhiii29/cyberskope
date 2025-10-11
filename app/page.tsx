@@ -657,11 +657,11 @@ export default function CyberSkopeLanding() {
                 <p className="text-sm text-slate-400 mb-4 text-center">Or reach out directly:</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                   <a
-                    href="mailto:abhi.gahane29@cyberskope.eu"
+                    href="mailto:info@cyberskope.eu"
                     className="flex items-center gap-2 text-slate-300 hover:text-cyan-400 transition-colors"
                   >
                     <Mail className="w-5 h-5" />
-                    <span>abhi.gahane29@cyberskope.eu</span>
+                    <span>info@cyberskope.eu</span>
                   </a>
                   <a
                     href="tel:+4915207610022"
@@ -671,6 +671,7 @@ export default function CyberSkopeLanding() {
                     <span>+49 1520 761 0022</span>
                   </a>
                 </div>
+
                 <div className="flex items-center justify-center gap-4 mt-6">
                   <a
                     href="https://www.linkedin.com/company/cyberskope"
