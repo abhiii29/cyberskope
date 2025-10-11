@@ -152,8 +152,8 @@ export default function CyberSkopeLanding() {
                 24/7 Threat Detection Without the Enterprise Cost
               </h1>
               <p className="text-lg text-slate-400 mb-8 text-pretty">
-                Expert-managed SOC and SIEM services powered by open-source technology. Get enterprise-grade security
-                monitoring at affordable rates.
+                Expert-managed SOC and SIEM services delivering enterprise-grade security monitoring at affordable
+                rates.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button
@@ -179,7 +179,7 @@ export default function CyberSkopeLanding() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-cyan-400" />
-                  <span>GDPR compliant</span>
+                  <span>ISO 27001, SOC 2, GDPR, NIS2 ready</span>
                 </div>
               </div>
             </div>
@@ -513,8 +513,8 @@ export default function CyberSkopeLanding() {
               </p>
               <p className="text-lg text-slate-400 mb-8">
                 We believe every business deserves enterprise-grade security, regardless of size. By leveraging
-                open-source technology and automation, we deliver world-class threat detection at a fraction of
-                traditional costs.
+                automation and expert engineering, we deliver world-class threat detection at a fraction of traditional
+                costs.
               </p>
 
               <div className="grid sm:grid-cols-3 gap-4">
@@ -531,7 +531,7 @@ export default function CyberSkopeLanding() {
                 <Card className="bg-slate-900 border-slate-800 p-6 text-center">
                   <div className="text-3xl font-bold text-cyan-400 mb-2">EU</div>
                   <div className="text-sm text-slate-400">Berlin-Based</div>
-                  <div className="text-xs text-slate-500 mt-2">GDPR compliant by design</div>
+                  <div className="text-xs text-slate-500 mt-2">Multi-framework compliance ready</div>
                 </Card>
               </div>
             </div>
@@ -542,7 +542,7 @@ export default function CyberSkopeLanding() {
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">
-                    Open-source technology = significantly lower costs than commercial SIEMs
+                    Cost-effective solutions significantly lower than commercial SIEMs
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
