@@ -510,8 +510,8 @@ export default function CyberSkopeLanding() {
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">Built by Security Engineers, For Security</h2>
               <p className="text-lg text-slate-400 mb-6">
                 Founded by experienced security engineers with extensive Blue Team, SIEM, and DevSecOps experience.
-                After seeing SMBs struggle with expensive enterprise solutions or settle for inadequate security,
-                CyberSkope was created to bridge the gap.
+                CyberSkope was created to democratize enterprise-grade security, making world-class threat detection
+                accessible to businesses of all sizes.
               </p>
               <p className="text-lg text-slate-400 mb-8">
                 We believe every business deserves enterprise-grade security, regardless of size. By leveraging
