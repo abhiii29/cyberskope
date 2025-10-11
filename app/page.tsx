@@ -26,10 +26,13 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { sendContactEmail } from "./actions/contact"
 
 export default function CyberSkopeLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -37,10 +40,22 @@ export default function CyberSkopeLanding() {
     message: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFormSubmitted(true)
-    setTimeout(() => setFormSubmitted(false), 5000)
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    const result = await sendContactEmail(formData)
+
+    if (result.success) {
+      setFormSubmitted(true)
+      setFormData({ name: "", email: "", company: "", message: "" })
+      setTimeout(() => setFormSubmitted(false), 5000)
+    } else {
+      setSubmitError(result.error || "Failed to send message. Please try again or contact us directly.")
+    }
+
+    setIsSubmitting(false)
   }
 
   const scrollToSection = (id: string) => {
@@ -603,6 +618,7 @@ export default function CyberSkopeLanding() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
@@ -616,6 +632,7 @@ export default function CyberSkopeLanding() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -629,6 +646,7 @@ export default function CyberSkopeLanding() {
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -642,11 +660,22 @@ export default function CyberSkopeLanding() {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                    disabled={isSubmitting}
                   />
                 </div>
-                <Button type="submit" size="lg" className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950">
-                  Request Free Assessment
-                  <ChevronRight className="w-5 h-5 ml-2" />
+                {submitError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+                    {submitError}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Request Free Assessment"}
+                  {!isSubmitting && <ChevronRight className="w-5 h-5 ml-2" />}
                 </Button>
                 <p className="text-xs text-slate-500 text-center">
                   By submitting, you agree to our privacy policy. We'll never share your information.
