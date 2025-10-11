@@ -21,7 +21,6 @@ import {
   Mail,
   Phone,
   Linkedin,
-  Github,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -154,7 +153,7 @@ export default function CyberSkopeLanding() {
               </h1>
               <p className="text-lg text-slate-400 mb-8 text-pretty">
                 Expert-managed SOC and SIEM services powered by open-source technology. Get enterprise-grade security
-                monitoring starting at €1,800/month.
+                monitoring at affordable rates.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button
@@ -508,9 +507,9 @@ export default function CyberSkopeLanding() {
             <div>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">Built by Security Engineers, For Security</h2>
               <p className="text-lg text-slate-400 mb-6">
-                Founded by Abhishek Gahane, a security engineer with 3+ years of Blue Team, SIEM, and DevSecOps
-                experience. After seeing SMBs struggle with expensive enterprise solutions or settle for inadequate
-                security, CyberSkope was created to bridge the gap.
+                Founded by experienced security engineers with extensive Blue Team, SIEM, and DevSecOps experience.
+                After seeing SMBs struggle with expensive enterprise solutions or settle for inadequate security,
+                CyberSkope was created to bridge the gap.
               </p>
               <p className="text-lg text-slate-400 mb-8">
                 We believe every business deserves enterprise-grade security, regardless of size. By leveraging
@@ -542,7 +541,9 @@ export default function CyberSkopeLanding() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Open-source Wazuh = 40% lower costs than commercial SIEMs</span>
+                  <span className="text-slate-300">
+                    Open-source technology = significantly lower costs than commercial SIEMs
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -558,7 +559,7 @@ export default function CyberSkopeLanding() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Founder-led service ensures quality at every step</span>
+                  <span className="text-slate-300">Expert-led service ensures quality at every step</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -654,11 +655,11 @@ export default function CyberSkopeLanding() {
                 <p className="text-sm text-slate-400 mb-4 text-center">Or reach out directly:</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                   <a
-                    href="mailto:abhi.gahane29@gmail.com"
+                    href="mailto:abhi.gahane29@cyberskope.eu"
                     className="flex items-center gap-2 text-slate-300 hover:text-cyan-400 transition-colors"
                   >
                     <Mail className="w-5 h-5" />
-                    <span>abhi.gahane29@gmail.com</span>
+                    <span>abhi.gahane29@cyberskope.eu</span>
                   </a>
                   <a
                     href="tel:+4915207610022"
@@ -670,20 +671,12 @@ export default function CyberSkopeLanding() {
                 </div>
                 <div className="flex items-center justify-center gap-4 mt-6">
                   <a
-                    href="https://linkedin.com/in/abhiii29"
+                    href="https://www.linkedin.com/company/cyberskope"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-slate-400 hover:text-cyan-400 transition-colors"
                   >
                     <Linkedin className="w-6 h-6" />
-                  </a>
-                  <a
-                    href="https://github.com/abhiii29"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-cyan-400 transition-colors"
-                  >
-                    <Github className="w-6 h-6" />
                   </a>
                 </div>
               </div>
