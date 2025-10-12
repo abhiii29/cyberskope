@@ -21,16 +21,24 @@ import {
   Mail,
   Phone,
   Linkedin,
-  Github,
+  Search,
+  Lock,
+  Package,
+  Target,
+  FileSearch,
+  ShieldCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { sendContactEmail } from "./actions/contact"
 
 export default function CyberSkopeLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -38,10 +46,22 @@ export default function CyberSkopeLanding() {
     message: "",
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFormSubmitted(true)
-    setTimeout(() => setFormSubmitted(false), 5000)
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    const result = await sendContactEmail(formData)
+
+    if (result.success) {
+      setFormSubmitted(true)
+      setFormData({ name: "", email: "", company: "", message: "" })
+      setTimeout(() => setFormSubmitted(false), 5000)
+    } else {
+      setSubmitError(result.error || "Failed to send message. Please try again or contact us directly.")
+    }
+
+    setIsSubmitting(false)
   }
 
   const scrollToSection = (id: string) => {
@@ -147,14 +167,14 @@ export default function CyberSkopeLanding() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 border border-cyan-500/30 rounded-full mb-6">
-                <span className="text-sm text-cyan-400">Enterprise Security for SMBs</span>
+                <span className="text-sm text-cyan-400">Comprehensive Cybersecurity Partner</span>
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-balance">
-                24/7 Threat Detection Without the Enterprise Cost
+                End-to-End Cyber Defense: From Detection to Prevention
               </h1>
               <p className="text-lg text-slate-400 mb-8 text-pretty">
-                Expert-managed SOC and SIEM services powered by open-source technology. Get enterprise-grade security
-                monitoring starting at €1,800/month.
+                We combine Managed SIEM, continuous vulnerability scanning, and supply chain protection to stop threats
+                before they reach you.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button
@@ -180,7 +200,7 @@ export default function CyberSkopeLanding() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-cyan-400" />
-                  <span>GDPR compliant</span>
+                  <span>ISO 27001, SOC 2, GDPR, NIS2 ready</span>
                 </div>
               </div>
             </div>
@@ -273,7 +293,9 @@ export default function CyberSkopeLanding() {
             <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
               <Database className="w-10 h-10 text-cyan-400 mb-4" />
               <h3 className="text-xl font-semibold mb-3">Threat Intelligence</h3>
-              <p className="text-slate-400">Real-time IOC enrichment using AbuseIPDB, VirusTotal, and MISP feeds.</p>
+              <p className="text-slate-400">
+                Real-time threat intelligence enrichment using multiple industry-leading feeds and IOC databases.
+              </p>
             </Card>
 
             <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
@@ -291,60 +313,242 @@ export default function CyberSkopeLanding() {
         </div>
       </section>
 
-      {/* How It Works */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-6">
+                <Search className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm text-cyan-400">Proactive Defense</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6">Find Weaknesses Before Attackers Do</h2>
+              <p className="text-lg text-slate-400 mb-8">
+                We run automated and manual vulnerability scans across your cloud, infrastructure, and applications —
+                identifying misconfigurations, outdated software, and exploitable flaws. Our team prioritizes what
+                matters most and guides you through remediation.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Continuous Vulnerability Scanning</div>
+                    <div className="text-sm text-slate-400">Automated scans across your entire infrastructure</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Patch & Remediation Prioritization</div>
+                    <div className="text-sm text-slate-400">Focus on what matters most to your business</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Cloud and On-Prem Coverage</div>
+                    <div className="text-sm text-slate-400">Complete visibility across hybrid environments</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Penetration Testing on Request</div>
+                    <div className="text-sm text-slate-400">Expert-led security assessments when you need them</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <Card className="bg-slate-900 border-slate-800 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Target className="w-8 h-8 text-cyan-400" />
+                  <h3 className="text-xl font-semibold">Vulnerability Management</h3>
+                </div>
+                <p className="text-slate-400 mb-4">
+                  Identify, assess, and remediate security vulnerabilities before they can be exploited.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-950 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-red-400 mb-1">Critical</div>
+                    <div className="text-xs text-slate-500">High-priority fixes</div>
+                  </div>
+                  <div className="bg-slate-950 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-yellow-400 mb-1">Medium</div>
+                    <div className="text-xs text-slate-500">Scheduled patches</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-slate-900 border-slate-800 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <FileSearch className="w-8 h-8 text-cyan-400" />
+                  <h3 className="text-xl font-semibold">Security Posture</h3>
+                </div>
+                <p className="text-slate-400 mb-4">Continuous assessment of your overall security health.</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 bg-slate-950 rounded-full h-3 overflow-hidden">
+                    <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full w-4/5"></div>
+                  </div>
+                  <span className="text-2xl font-bold text-cyan-400">80%</span>
+                </div>
+                <div className="text-xs text-slate-500 mt-2">Security score improving</div>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1 grid grid-cols-1 gap-4">
+              <Card className="bg-slate-900 border-slate-800 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Package className="w-8 h-8 text-cyan-400" />
+                  <h3 className="text-xl font-semibold">Dependency Analysis</h3>
+                </div>
+                <p className="text-slate-400 mb-4">
+                  Monitor open-source components and software dependencies for known vulnerabilities.
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">Dependencies scanned</span>
+                    <span className="text-cyan-400 font-semibold">1,247</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">Vulnerabilities found</span>
+                    <span className="text-yellow-400 font-semibold">12</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">Critical issues</span>
+                    <span className="text-red-400 font-semibold">2</span>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="bg-slate-900 border-slate-800 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <ShieldCheck className="w-8 h-8 text-cyan-400" />
+                  <h3 className="text-xl font-semibold">Vendor Risk Assessment</h3>
+                </div>
+                <p className="text-slate-400">
+                  Evaluate and monitor third-party vendors for security compliance and risk exposure.
+                </p>
+              </Card>
+            </div>
+
+            <div className="order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-6">
+                <Lock className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm text-cyan-400">Supply Chain Security</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6">Secure Your Software Supply Chain</h2>
+              <p className="text-lg text-slate-400 mb-8">
+                Cyber threats often strike through trusted partners and software dependencies. We help you assess,
+                monitor, and protect your external vendors, open-source components, and CI/CD pipelines.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Vendor and Third-Party Risk Assessments</div>
+                    <div className="text-sm text-slate-400">Evaluate security posture of your partners</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Dependency & Software Component Analysis (SBOM)</div>
+                    <div className="text-sm text-slate-400">Track and secure your software bill of materials</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Continuous Monitoring of External Exposure</div>
+                    <div className="text-sm text-slate-400">Real-time alerts on third-party vulnerabilities</div>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <div className="font-semibold text-slate-200">Compliance with NIS2 and ISO 27001</div>
+                    <div className="text-sm text-slate-400">Meet regulatory requirements for supply chain security</div>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">How It Works</h2>
-            <p className="text-lg text-slate-400">Get started with enterprise security in four simple steps</p>
+            <p className="text-lg text-slate-400">Get started with comprehensive cybersecurity in five simple steps</p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
             <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
                 <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
                   1
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Discovery Call</h3>
+                <h3 className="text-xl font-semibold mb-3">Discovery</h3>
                 <p className="text-slate-400">
-                  Understand your infrastructure and security goals through a comprehensive consultation.
+                  Assess your current infrastructure and identify security risks through comprehensive consultation.
                 </p>
               </div>
-              <ChevronRight className="hidden lg:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 text-cyan-500/30" />
+              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
             </div>
 
             <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
                 <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
                   2
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Free Assessment</h3>
+                <h3 className="text-xl font-semibold mb-3">Scanning & Analysis</h3>
                 <p className="text-slate-400">
-                  Comprehensive security posture evaluation to identify vulnerabilities and risks.
+                  Identify vulnerabilities and supply chain exposures across your entire digital ecosystem.
                 </p>
               </div>
-              <ChevronRight className="hidden lg:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 text-cyan-500/30" />
+              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
             </div>
 
             <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
                 <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
                   3
                 </div>
-                <h3 className="text-xl font-semibold mb-3">Rapid Deployment</h3>
-                <p className="text-slate-400">Agent deployment and custom tuning completed in just 2-4 weeks.</p>
+                <h3 className="text-xl font-semibold mb-3">Deployment</h3>
+                <p className="text-slate-400">
+                  Integrate SIEM, sensors, and endpoint protection with custom tuning for your environment.
+                </p>
               </div>
-              <ChevronRight className="hidden lg:block absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 text-cyan-500/30" />
+              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
             </div>
 
-            <div>
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
+            <div className="relative">
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
                 <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
                   4
                 </div>
-                <h3 className="text-xl font-semibold mb-3">24/7 Monitoring</h3>
+                <h3 className="text-xl font-semibold mb-3">Monitoring</h3>
+                <p className="text-slate-400">24/7 SOC operations with expert security analysts and alert triage.</p>
+              </div>
+              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
+            </div>
+
+            <div>
+              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
+                <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
+                  5
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Remediation & Reporting</h3>
                 <p className="text-slate-400">
-                  Continuous threat detection and response with expert security analysts.
+                  Guided fixes, compliance dashboards, and executive summaries for continuous improvement.
                 </p>
               </div>
             </div>
@@ -352,7 +556,6 @@ export default function CyberSkopeLanding() {
         </div>
       </section>
 
-      {/* Pricing Section */}
       <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
@@ -365,12 +568,16 @@ export default function CyberSkopeLanding() {
             <Card className="bg-slate-900 border-slate-800 p-8">
               <h3 className="text-2xl font-bold mb-2">Starter</h3>
               <div className="mb-6">
-                <span className="text-lg text-slate-400">For small teams</span>
+                <span className="text-lg text-slate-400">Managed SIEM + Monthly Vulnerability Scan</span>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">Up to 25 endpoints</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-300">Monthly vulnerability scanning</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -387,10 +594,6 @@ export default function CyberSkopeLanding() {
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">Email & Slack alerts</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Monthly compliance summary</span>
                 </li>
               </ul>
               <Button
@@ -409,12 +612,20 @@ export default function CyberSkopeLanding() {
               </div>
               <h3 className="text-2xl font-bold mb-2">Professional</h3>
               <div className="mb-6">
-                <span className="text-lg text-slate-400">For growing businesses</span>
+                <span className="text-lg text-slate-400">Continuous Scanning + Supply Chain Monitoring</span>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">Up to 100 endpoints</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-300">Continuous vulnerability scanning</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-300">Supply chain monitoring (SBOM)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -426,19 +637,11 @@ export default function CyberSkopeLanding() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Monthly compliance reports</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">Quarterly threat hunting</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">Dedicated Slack channel</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Incident response coordination</span>
                 </li>
               </ul>
               <Button
@@ -453,12 +656,20 @@ export default function CyberSkopeLanding() {
             <Card className="bg-slate-900 border-slate-800 p-8">
               <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
               <div className="mb-6">
-                <span className="text-lg text-slate-400">For large organizations</span>
+                <span className="text-lg text-slate-400">Full SOC + Supply Chain + Penetration Testing</span>
               </div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">200+ endpoints</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-300">Advanced penetration testing</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <span className="text-slate-300">Full supply chain protection</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -470,19 +681,11 @@ export default function CyberSkopeLanding() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Industry-specific threat intel</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">On-demand incident response</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
                   <span className="text-slate-300">Executive security reviews</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">White-glove onboarding</span>
                 </li>
               </ul>
               <Button
@@ -508,14 +711,14 @@ export default function CyberSkopeLanding() {
             <div>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">Built by Security Engineers, For Security</h2>
               <p className="text-lg text-slate-400 mb-6">
-                Founded by Abhishek Gahane, a security engineer with 3+ years of Blue Team, SIEM, and DevSecOps
-                experience. After seeing SMBs struggle with expensive enterprise solutions or settle for inadequate
-                security, CyberSkope was created to bridge the gap.
+                Founded by experienced security engineers with extensive Blue Team, SIEM, and DevSecOps experience.
+                CyberSkope was created to democratize enterprise-grade security, making world-class threat detection
+                accessible to businesses of all sizes.
               </p>
               <p className="text-lg text-slate-400 mb-8">
                 We believe every business deserves enterprise-grade security, regardless of size. By leveraging
-                open-source technology and automation, we deliver world-class threat detection at a fraction of
-                traditional costs.
+                automation and expert engineering, we deliver world-class threat detection at a fraction of traditional
+                costs.
               </p>
 
               <div className="grid sm:grid-cols-3 gap-4">
@@ -532,7 +735,7 @@ export default function CyberSkopeLanding() {
                 <Card className="bg-slate-900 border-slate-800 p-6 text-center">
                   <div className="text-3xl font-bold text-cyan-400 mb-2">EU</div>
                   <div className="text-sm text-slate-400">Berlin-Based</div>
-                  <div className="text-xs text-slate-500 mt-2">GDPR compliant by design</div>
+                  <div className="text-xs text-slate-500 mt-2">Multi-framework compliance ready</div>
                 </Card>
               </div>
             </div>
@@ -542,7 +745,9 @@ export default function CyberSkopeLanding() {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Open-source Wazuh = 40% lower costs than commercial SIEMs</span>
+                  <span className="text-slate-300">
+                    Cost-effective solutions significantly lower than commercial SIEMs
+                  </span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -558,7 +763,7 @@ export default function CyberSkopeLanding() {
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Founder-led service ensures quality at every step</span>
+                  <span className="text-slate-300">Expert-led service ensures quality at every step</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -567,6 +772,43 @@ export default function CyberSkopeLanding() {
               </ul>
             </Card>
           </div>
+        </div>
+      </section>
+
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900/30 to-slate-950">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-6">
+            <Shield className="w-4 h-4 text-cyan-400" />
+            <span className="text-sm text-cyan-400">Free Security Assessment</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+            Know Where You Stand — Get a Free Vulnerability & Risk Assessment
+          </h2>
+          <p className="text-lg text-slate-400 mb-8">
+            Discover your security gaps before attackers do. Our comprehensive assessment identifies vulnerabilities,
+            supply chain risks, and compliance gaps across your entire infrastructure.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button
+              onClick={() => scrollToSection("contact")}
+              size="lg"
+              className="bg-cyan-500 hover:bg-cyan-600 text-slate-950"
+            >
+              Schedule My Assessment
+              <ChevronRight className="w-5 h-5 ml-2" />
+            </Button>
+            <Button
+              onClick={() => scrollToSection("how-it-works")}
+              size="lg"
+              variant="outline"
+              className="border-slate-700 hover:border-cyan-500 hover:text-cyan-400"
+            >
+              Learn More
+            </Button>
+          </div>
+          <p className="text-sm text-slate-500 mt-6">
+            No commitment required • Detailed report included • Expert recommendations
+          </p>
         </div>
       </section>
 
@@ -600,6 +842,7 @@ export default function CyberSkopeLanding() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
@@ -613,6 +856,7 @@ export default function CyberSkopeLanding() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -626,6 +870,7 @@ export default function CyberSkopeLanding() {
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                     className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div>
@@ -639,11 +884,22 @@ export default function CyberSkopeLanding() {
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                     className="bg-slate-950 border-slate-700 focus:border-cyan-500"
+                    disabled={isSubmitting}
                   />
                 </div>
-                <Button type="submit" size="lg" className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950">
-                  Request Free Assessment
-                  <ChevronRight className="w-5 h-5 ml-2" />
+                {submitError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+                    {submitError}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Sending..." : "Request Free Assessment"}
+                  {!isSubmitting && <ChevronRight className="w-5 h-5 ml-2" />}
                 </Button>
                 <p className="text-xs text-slate-500 text-center">
                   By submitting, you agree to our privacy policy. We'll never share your information.
@@ -654,11 +910,11 @@ export default function CyberSkopeLanding() {
                 <p className="text-sm text-slate-400 mb-4 text-center">Or reach out directly:</p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                   <a
-                    href="mailto:abhi.gahane29@gmail.com"
+                    href="mailto:info@cyberskope.eu"
                     className="flex items-center gap-2 text-slate-300 hover:text-cyan-400 transition-colors"
                   >
                     <Mail className="w-5 h-5" />
-                    <span>abhi.gahane29@gmail.com</span>
+                    <span>info@cyberskope.eu</span>
                   </a>
                   <a
                     href="tel:+4915207610022"
@@ -668,22 +924,15 @@ export default function CyberSkopeLanding() {
                     <span>+49 1520 761 0022</span>
                   </a>
                 </div>
+
                 <div className="flex items-center justify-center gap-4 mt-6">
                   <a
-                    href="https://linkedin.com/in/abhiii29"
+                    href="https://www.linkedin.com/company/cyberskope"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-slate-400 hover:text-cyan-400 transition-colors"
                   >
                     <Linkedin className="w-6 h-6" />
-                  </a>
-                  <a
-                    href="https://github.com/abhiii29"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-cyan-400 transition-colors"
-                  >
-                    <Github className="w-6 h-6" />
                   </a>
                 </div>
               </div>
@@ -721,12 +970,12 @@ export default function CyberSkopeLanding() {
                 </li>
                 <li>
                   <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Incident Response
+                    Vulnerability Management
                   </a>
                 </li>
                 <li>
                   <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Compliance Reporting
+                    Supply Chain Security
                   </a>
                 </li>
               </ul>
