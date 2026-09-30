@@ -350,11 +350,7 @@ function Detection() {
   )
 }
 
-const sampleLog =
-  'type=EXECVE msg=audit(1727700000.123:4411): argc=3 a0="sudo" a1="-u" a2="postgres" AUID="alice" UID="root"'
-
 function Lab() {
-  const [tab, setTab] = useState<"translate" | "decode">("translate")
   return (
     <section className="relative border-y border-border bg-card/30">
       <div className="mx-auto max-w-6xl px-4 py-24">
@@ -364,56 +360,11 @@ function Lab() {
           title="Rule translator"
           sub="Paste a Sigma rule and get Splunk, Elastic, Sentinel, LogScale and Wazuh queries, plus an honest list of what each translation lost. Runs entirely in your browser; nothing is sent anywhere."
         />
-        <div className="mt-8 flex gap-2">
-          {([["translate", "Translate a rule"], ["decode", "Decode a log"]] as const).map(([k, l]) => (
-            <button
-              key={k}
-              onClick={() => setTab(k)}
-              className={`rounded-full border px-4 py-1.5 font-mono text-xs transition ${tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}
-            >
-              {l}
-            </button>
-          ))}
+        <div className="mt-8">
+          <RuleTranslator />
         </div>
-        <div className="mt-6">{tab === "translate" ? <RuleTranslator /> : <DecoderDemo />}</div>
       </div>
     </section>
-  )
-}
-
-function DecoderDemo() {
-  const [line, setLine] = useState(sampleLog)
-  const fields = [...line.matchAll(/(\w+)=("[^"]*"|\S+)/g)].map((m) => [m[1], m[2].replace(/"/g, "")])
-  const cmd = fields.filter(([k]) => /^a\d+$/.test(k)).map(([, v]) => v).join(" ")
-  const isPriv = /sudo|su\b/.test(cmd)
-  return (
-    <div className="rounded-xl border border-border bg-card/60 p-5">
-      <div className="flex items-center justify-between">
-        <div className="font-mono text-sm">decoder playground <span className="text-muted-foreground">— edit the log line</span></div>
-        <button onClick={() => setLine(sampleLog)} className="font-mono text-xs text-primary">reset</button>
-      </div>
-      <input
-        value={line}
-        onChange={(e) => setLine(e.target.value)}
-        className="mt-3 w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary"
-      />
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <table className="font-mono text-xs">
-          <tbody>
-            {fields.map(([k, v], i) => (
-              <tr key={i} className="border-b border-border/50"><td className="py-1 pr-4 text-primary">{k}</td><td className="text-foreground/80">{v}</td></tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="rounded border border-border bg-background p-3 font-mono text-xs">
-          <div className="text-muted-foreground">** Phase 3: rule matching</div>
-          <div>command: <span className="text-primary">{cmd || "—"}</span></div>
-          <div className={isPriv ? "text-amber-300" : "text-muted-foreground"}>
-            {isPriv ? "rule 100205 (level 10): privilege change via sudo" : "no rule matched"}
-          </div>
-        </div>
-      </div>
-    </div>
   )
 }
 
