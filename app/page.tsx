@@ -7,18 +7,28 @@ import { logSources, noiseSeries, projects, skills, stats, timeline, type Projec
 import { sendContactEmail } from "@/app/actions/contact"
 import { RuleTranslator } from "@/components/rule-lab"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Reveal, spotlight, useActiveSection, useScrollProgress } from "@/components/motion"
+import {
+  EASE, MaskText, Reveal, ScrollProgressBar, ScrollScale, ScrollText, motion, spotlight,
+  useActiveSection, useReducedMotion, useScroll, useScrollStep, useTransform,
+} from "@/components/motion"
+import { BootProvider, useBooted } from "@/components/boot-loader"
+import { NetworkField } from "@/components/network-field"
 
 const nav = ["work", "agent", "detection", "lab", "journey", "skills", "terminal", "contact"]
 
 export default function Page() {
   const [open, setOpen] = useState<Project | null>(null)
   return (
+    <BootProvider>
     <main className="min-h-screen bg-background text-foreground">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,var(--grid)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
       <Header />
       <Hero />
       <Stats />
+      <ScrollText
+        text="Millions of events a day. A handful that matter. I build the systems that tell them apart, and prove it with evidence."
+        accent={["handful", "matter", "evidence"]}
+      />
       <Work onOpen={setOpen} />
       <Agent />
       <Detection />
@@ -32,18 +42,15 @@ export default function Page() {
       </footer>
       {open && <ProjectModal project={open} onClose={() => setOpen(null)} />}
     </main>
+    </BootProvider>
   )
 }
 
 function Header() {
-  const progress = useScrollProgress()
   const active = useActiveSection(nav)
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur">
-      <div
-        className="absolute bottom-0 left-0 h-px w-full origin-left bg-gradient-to-r from-primary to-violet"
-        style={{ transform: `scaleX(${progress})` }}
-      />
+      <ScrollProgressBar />
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a href="#" className="flex items-center gap-2 font-mono text-sm font-semibold">
           <ShieldCheck className="h-5 w-5 text-primary" /> cyberskope<span className="text-primary">_</span>
@@ -70,9 +77,10 @@ function Header() {
   )
 }
 
-function useTyped(lines: string[], speed = 28) {
+function useTyped(lines: string[], start: boolean, speed = 28) {
   const [out, setOut] = useState("")
   useEffect(() => {
+    if (!start) return
     const full = lines.join("\n")
     let i = 0
     const t = setInterval(() => {
@@ -81,7 +89,7 @@ function useTyped(lines: string[], speed = 28) {
       if (i >= full.length) clearInterval(t)
     }, speed)
     return () => clearInterval(t)
-  }, [])
+  }, [start])
   return out
 }
 
@@ -96,13 +104,27 @@ const feedTemplates = [
 ]
 
 function Hero() {
+  const booted = useBooted()
+  const reduce = useReducedMotion()
+  const heroRef = useRef<HTMLDivElement>(null)
+  // As the hero scrolls away it recedes: shrinks, dims and blurs (Apple product-page exit).
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] })
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.9])
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
+  const blur = useTransform(scrollYProgress, [0, 1], ["blur(0px)", "blur(6px)"])
+  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"])
+  const rise = (d: number) => ({
+    initial: reduce ? false : { opacity: 0, y: 24 },
+    animate: booted ? { opacity: 1, y: 0 } : undefined,
+    transition: { duration: 0.9, ease: EASE, delay: d },
+  })
   const typed = useTyped([
     "$ whoami",
     "security_engineer  # SIEM · detection · IaC · agentic AI",
     "$ cat focus.txt",
     "I build SIEM platforms from code, write detections that",
     "earn their alerts, and teach AI agents to read logs safely.",
-  ])
+  ], booted)
   const [feed, setFeed] = useState<(typeof feedTemplates[number] & { t: string; id: number })[]>([])
   useEffect(() => {
     let id = 0
@@ -117,42 +139,54 @@ function Hero() {
     l >= 12 ? "text-danger" : l >= 7 ? "text-warn" : l === 0 ? "text-muted-foreground/60 line-through" : "text-primary"
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Full-width glow, faded at every edge so it has no visible boundary */}
-      <div
+    <div ref={heroRef} className="relative overflow-hidden">
+      {/* Particle network behind the hero, drifting slower than the page (parallax) */}
+      <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_80%_at_50%_40%,black_40%,transparent_100%)]"
+        style={reduce ? undefined : { y: bgY }}
+        className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_75%_75%_at_50%_45%,black_30%,transparent_100%)]"
       >
-        <div className="aurora left-[5%] top-[5%] h-[28rem] w-[28rem] bg-primary" />
-        <div className="aurora right-[5%] top-[25%] h-[32rem] w-[32rem] bg-violet [animation-delay:-6s]" />
-        <div className="aurora bottom-[-15%] left-[35%] h-80 w-80 bg-primary [animation-delay:-12s]" />
-      </div>
-    <section className="relative mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-20 md:grid-cols-[1.1fr_1fr] md:pt-28">
-      <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs text-primary">
+        <NetworkField />
+        <div className="aurora left-[10%] top-[10%] h-[26rem] w-[26rem] bg-primary" />
+        <div className="aurora right-[8%] top-[30%] h-[30rem] w-[30rem] bg-violet [animation-delay:-8s]" />
+      </motion.div>
+    <motion.section
+      style={reduce ? undefined : { scale, opacity, filter: blur }}
+      className="relative mx-auto grid min-h-[calc(100svh-57px)] max-w-6xl content-center gap-10 px-4 py-16 md:grid-cols-[1.1fr_1fr]"
+    >
+      <div className="relative">
+        <motion.p {...rise(0)} className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs text-primary">
           <span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> Security Engineer · Germany
-        </p>
+        </motion.p>
         <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-          Signal over <span className="text-gradient">noise.</span>
+          <MaskText text="Signal over" play={booted} delay={0.1} />{" "}
+          <MaskText text="noise." play={booted} delay={0.26} className="text-gradient" />
         </h1>
-        <p className="mt-5 max-w-lg text-lg text-muted-foreground">
+        <motion.p {...rise(0.35)} className="mt-5 max-w-lg text-lg text-muted-foreground">
           Four years engineering and operating a multi-tenant Wazuh SIEM estate for banking, insurance and public-sector
           customers. Everything as code, every alert with a reason.
-        </p>
+        </motion.p>
+        <motion.div {...rise(0.45)}>
         <pre className="mt-8 min-h-[140px] whitespace-pre-wrap rounded-lg border border-border bg-card/80 p-4 font-mono text-sm text-foreground/90">
           {typed}
           <span className="animate-pulse text-primary">▋</span>
         </pre>
-        <div className="mt-6 flex flex-wrap gap-3">
+        </motion.div>
+        <motion.div {...rise(0.55)} className="mt-6 flex flex-wrap gap-3">
           <a href="#work" className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
             See the work <ArrowRight className="h-4 w-4" />
           </a>
           <a href="#terminal" className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm hover:border-primary">
             <Terminal className="h-4 w-4" /> Open the terminal
           </a>
-        </div>
+        </motion.div>
       </div>
-      <div className="relative rounded-xl border border-border bg-card/70 shadow-2xl shadow-primary/10 backdrop-blur animate-in fade-in slide-in-from-bottom-6 duration-1000">
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 40, scale: 0.96 }}
+        animate={booted ? { opacity: 1, y: 0, scale: 1 } : undefined}
+        transition={{ duration: 1.1, ease: EASE, delay: 0.4 }}
+        className="relative self-center rounded-xl border border-border bg-card/70 shadow-2xl shadow-primary/10 backdrop-blur"
+      >
         <div className="flex items-center justify-between border-b border-border px-4 py-2 font-mono text-xs text-muted-foreground">
           <span>alerts.live — simulated</span>
           <span className="flex gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-danger/70" /><i className="h-2.5 w-2.5 rounded-full bg-warn/70" /><i className="h-2.5 w-2.5 rounded-full bg-primary/70" /></span>
@@ -166,8 +200,8 @@ function Hero() {
             </li>
           ))}
         </ul>
-      </div>
-    </section>
+      </motion.div>
+    </motion.section>
     </div>
   )
 }
@@ -238,7 +272,7 @@ function Work({ onOpen }: { onOpen: (p: Project) => void }) {
       <SectionHead id="work" kicker="01 · selected work" title="Case studies" sub="Customer names withheld. Numbers are real." />
       <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {projects.map((p, i) => (
-          <Reveal key={p.id} delay={(i % 3) * 110} className="flex">
+          <ScrollScale key={p.id} className="flex">
           <button
             onClick={() => onOpen(p)}
             onPointerMove={spotlight}
@@ -255,7 +289,7 @@ function Work({ onOpen }: { onOpen: (p: Project) => void }) {
               read more <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
             </span>
           </button>
-          </Reveal>
+          </ScrollScale>
         ))}
       </div>
     </section>
@@ -304,42 +338,75 @@ const agentSteps = [
 
 function Agent() {
   const [active, setActive] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => setActive((a) => (a + 1) % agentSteps.length), 2200)
-    return () => clearInterval(t)
-  }, [])
+  const reduce = useReducedMotion()
+  const pinRef = useRef<HTMLDivElement>(null)
+  // The step list stays pinned while scrolling through the section; scroll position picks the step.
+  const { scrollYProgress } = useScroll({ target: pinRef, offset: ["start start", "end end"] })
+  // Only pinned (and so scroll-driven) from md up; on phones the steps are tapped instead.
+  useScrollStep(scrollYProgress, agentSteps.length, (i) => {
+    if (!reduce && window.matchMedia("(min-width: 768px)").matches) setActive(i)
+  })
+  const fill = useTransform(scrollYProgress, [0, 1], [0, 1])
+  const goTo = (i: number) => {
+    const el = pinRef.current
+    if (!el || reduce || window.innerWidth < 768) return setActive(i)
+    const top = el.getBoundingClientRect().top + window.scrollY
+    window.scrollTo({ top: top + ((i + 0.5) / agentSteps.length) * (el.offsetHeight - window.innerHeight), behavior: "smooth" })
+  }
+  const S = agentSteps[active]
   return (
     <section className="relative border-y border-border bg-card/30">
-      <div className="mx-auto max-w-6xl px-4 py-24">
+      <div className="mx-auto max-w-6xl px-4 pt-24">
         <SectionHead
           id="agent"
           kicker="02 · agentic AI"
           title="An AI analyst that can't make things up"
           sub="Design for an on-prem agent that does the daily SOC review across a multi-tenant SIEM estate. Deterministic where it must be exact, an LLM only where judgement helps."
         />
-        <div className="mt-12 grid gap-4 md:grid-cols-5">
-          {agentSteps.map((s, i) => (
-            <Reveal key={s.title} delay={i * 100} className="flex">
-            <button
-              onClick={() => setActive(i)}
-              className={`relative w-full overflow-hidden rounded-xl border p-5 text-left transition duration-500 ${i === active ? "-translate-y-1 border-primary bg-primary/10 shadow-lg shadow-primary/10" : i < active ? "border-primary/30 bg-card/60" : "border-border bg-card/60"}`}
+      </div>
+      <div ref={pinRef} className={reduce ? "" : "md:h-[300vh]"}>
+        <div className={`mx-auto grid max-w-6xl gap-8 px-4 py-12 md:grid-cols-[1fr_1.2fr] ${reduce ? "" : "md:sticky md:top-14 md:h-[calc(100vh-3.5rem)] md:content-center"}`}>
+          <ol className="relative space-y-2 pl-6">
+            <span className="absolute left-[7px] top-2 bottom-2 w-px bg-border" />
+            <motion.span
+              style={{ scaleY: reduce ? (active + 1) / agentSteps.length : fill }}
+              className="absolute left-[7px] top-2 bottom-2 w-px origin-top bg-primary"
+            />
+            {agentSteps.map((s, i) => (
+              <li key={s.title}>
+                <button onClick={() => goTo(i)} className="group flex w-full items-start gap-4 rounded-lg py-2 text-left">
+                  <span
+                    className={`absolute left-0 mt-1 h-3.5 w-3.5 rounded-full border-2 transition-all duration-500 ${i <= active ? "border-primary bg-primary" : "border-border bg-background"} ${i === active ? "scale-125 shadow-[0_0_12px_var(--primary)]" : ""}`}
+                  />
+                  <div className={`transition-all duration-500 ${i === active ? "translate-x-1 opacity-100" : "opacity-45 group-hover:opacity-75"}`}>
+                    <div className="font-mono text-xs text-muted-foreground">step {i + 1}</div>
+                    <div className={`text-xl font-semibold md:text-2xl ${i === active ? "text-foreground" : ""}`}>{s.title}</div>
+                  </div>
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="relative min-h-[260px] overflow-hidden rounded-2xl border border-border bg-card/70 p-8 shadow-2xl shadow-primary/10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,color-mix(in_oklch,var(--primary)_14%,transparent),transparent_60%)]" />
+            <motion.div
+              key={active}
+              initial={reduce ? false : { opacity: 0, y: 24, filter: "blur(6px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.6, ease: EASE }}
+              className="relative"
             >
-              {i === active && (
-                <span
-                  key={active}
-                  className="absolute left-0 top-0 h-0.5 w-full origin-left bg-primary"
-                  style={{ animation: "fill 2.2s linear forwards" }}
-                />
-              )}
-              <s.icon className={`h-6 w-6 transition-transform duration-500 ${i === active ? "scale-110 text-primary" : "text-muted-foreground"}`} />
-              <div className="mt-3 font-mono text-xs text-muted-foreground">step {i + 1}</div>
-              <div className="font-semibold">{s.title}</div>
-              <p className="mt-2 text-xs text-muted-foreground">{s.body}</p>
-            </button>
-            </Reveal>
-          ))}
+              <S.icon className="h-10 w-10 text-primary" />
+              <div className="mt-6 font-mono text-xs text-muted-foreground">
+                step {active + 1} / {agentSteps.length}
+              </div>
+              <h3 className="mt-1 text-3xl font-bold">{S.title}</h3>
+              <p className="mt-4 max-w-md text-lg text-muted-foreground">{S.body}</p>
+            </motion.div>
+          </div>
         </div>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pb-24">
+        <div className="grid gap-4 md:grid-cols-3">
           {[
             ["Read-only", "wazuh:read scope end to end; credentials never leave the proxy."],
             ["Injection-aware", "Every log field is treated as untrusted input to the model."],
