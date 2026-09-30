@@ -8,13 +8,13 @@ import { samples } from "@/lib/rulebridge/samples"
 import { evaluate } from "@/lib/rulebridge/evaluate"
 
 const sevStyle: Record<Severity, { icon: typeof Info; cls: string }> = {
-  error: { icon: CircleX, cls: "text-red-400 border-red-400/30 bg-red-400/5" },
-  warning: { icon: AlertTriangle, cls: "text-amber-300 border-amber-300/30 bg-amber-300/5" },
+  error: { icon: CircleX, cls: "text-danger border-danger/30 bg-danger/5" },
+  warning: { icon: AlertTriangle, cls: "text-warn border-warn/30 bg-warn/5" },
   info: { icon: Info, cls: "text-muted-foreground border-border bg-background/40" },
 }
-const dot = { error: "bg-red-400", warning: "bg-amber-300", info: "bg-primary", ok: "bg-primary" }
+const dot = { error: "bg-danger", warning: "bg-warn", info: "bg-primary", ok: "bg-primary" }
 const fieldCls: Record<FieldStatus, string> = {
-  mapped: "text-primary", identity: "text-muted-foreground", derived: "text-amber-300", unmapped: "text-red-400",
+  mapped: "text-primary", identity: "text-muted-foreground", derived: "text-warn", unmapped: "text-danger",
 }
 
 export function RuleTranslator() {
@@ -85,7 +85,7 @@ export function RuleTranslator() {
               ))}
             </div>
             {lost.length > 0 && (
-              <p className="mt-2 text-xs text-red-400">Coverage lost in translation on: {lost.join(", ")}</p>
+              <p className="mt-2 text-xs text-danger">Coverage lost in translation on: {lost.join(", ")}</p>
             )}
           </div>
         )}
@@ -160,7 +160,7 @@ export function RuleTranslator() {
       <div className="min-w-0 rounded-xl border border-border bg-card/60 p-3">
         <div className="mb-3 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">Compare all platforms</div>
         {!parsed.rule ? (
-          <p className="font-mono text-xs text-red-400">fix the rule to compare platforms</p>
+          <p className="font-mono text-xs text-danger">fix the rule to compare platforms</p>
         ) : (
           <table className="w-full font-mono text-xs">
             <thead>
@@ -187,7 +187,7 @@ export function RuleTranslator() {
                     title={top?.message}
                   >
                     <td className="py-2 pr-2"><span className={`mr-2 inline-block h-1.5 w-1.5 rounded-full ${dot[w]}`} />{t.name}</td>
-                    <td className={`py-2 pr-2 ${w === "error" ? "text-red-400" : w === "warning" ? "text-amber-300" : "text-primary"}`}>
+                    <td className={`py-2 pr-2 ${w === "error" ? "text-danger" : w === "warning" ? "text-warn" : "text-primary"}`}>
                       {verdict}
                       {top && w !== "info" && <div className="truncate text-[10px] text-muted-foreground">{top.code}</div>}
                     </td>
@@ -221,7 +221,7 @@ export function RuleTranslator() {
           className="min-h-[140px] resize-y bg-transparent p-3 font-mono text-xs leading-5 outline-none"
         />
         <div className="border-t border-border p-3">
-          {result?.error && <p className="font-mono text-xs text-red-400">{result.error}</p>}
+          {result?.error && <p className="font-mono text-xs text-danger">{result.error}</p>}
           {result && !result.error && (
             <div className="space-y-3">
               <div className="font-mono text-[11px] text-muted-foreground">condition uses Sigma semantics, not any one platform&apos;s</div>
@@ -233,7 +233,7 @@ export function RuleTranslator() {
                   <ul className="ml-4 mt-1 space-y-0.5">
                     {sel.leaves.map((l, i) => (
                       <li key={i} className="break-all font-mono text-[11px] text-muted-foreground">
-                        <span className={l.matched ? "text-primary" : "text-red-400/80"}>{l.matched ? "✓" : "✗"}</span> {l.field}{" "}
+                        <span className={l.matched ? "text-primary" : "text-danger/80"}>{l.matched ? "✓" : "✗"}</span> {l.field}{" "}
                         <span className="opacity-60">expects</span> {l.expected} <span className="opacity-60">got</span> {l.actual}
                       </li>
                     ))}

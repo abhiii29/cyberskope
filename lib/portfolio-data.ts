@@ -2,7 +2,7 @@
 
 export const stats = [
   { value: 4, suffix: "+", label: "years in security engineering" },
-  { value: 2, suffix: "", label: "SIEMs built from scratch" },
+  { value: 7, suffix: "", label: "repositories put under CI" },
   { value: 8, suffix: "", label: "Wazuh upgrade rounds shipped" },
   { value: 25, suffix: "+", label: "log source types onboarded" },
 ]
@@ -48,7 +48,7 @@ export const timeline = [
     period: "2026",
     title: "Greenfield SIEMs, detection engineering & agentic AI",
     points: [
-      "Two production SIEMs built from scratch on OpenStack with Terraform + Ansible",
+      "Greenfield production SIEMs built from scratch on OpenStack with Terraform + Ansible",
       "auditd use-case programme with evidence-based false-positive reduction",
       "Designed an on-prem AI agent that automates the daily SOC review across every SIEM instance",
     ],

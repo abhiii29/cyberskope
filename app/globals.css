@@ -3,8 +3,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Light theme */
 :root {
-  /* Updated theme for CyberSkope - dark cybersecurity aesthetic with cyan accents */
+  --background: oklch(0.985 0.004 240);
+  --foreground: oklch(0.21 0.02 245);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 245);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.02 245);
+  --primary: oklch(0.52 0.12 205);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.008 240);
+  --secondary-foreground: oklch(0.21 0.02 245);
+  --muted: oklch(0.95 0.008 240);
+  --muted-foreground: oklch(0.47 0.02 245);
+  --accent: oklch(0.52 0.12 205);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.008 240);
+  --input: oklch(0.9 0.008 240);
+  --ring: oklch(0.52 0.12 205);
+  --danger: oklch(0.55 0.2 25);
+  --warn: oklch(0.6 0.15 60);
+  --violet: oklch(0.52 0.2 285);
+  --grid: oklch(0.88 0.01 240 / 0.6);
+  --radius: 0.5rem;
+}
+
+/* Dark theme: the original cyan-on-navy look */
+.dark {
   --background: oklch(0.11 0.01 240);
   --foreground: oklch(0.95 0.01 240);
   --card: oklch(0.15 0.01 240);
@@ -24,55 +52,10 @@
   --border: oklch(0.25 0.01 240);
   --input: oklch(0.25 0.01 240);
   --ring: oklch(0.7 0.15 195);
-  --chart-1: oklch(0.7 0.15 195);
-  --chart-2: oklch(0.65 0.18 280);
-  --chart-3: oklch(0.6 0.2 340);
-  --chart-4: oklch(0.75 0.12 150);
-  --chart-5: oklch(0.68 0.16 60);
-  --radius: 0.5rem;
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --danger: oklch(0.7 0.18 25);
+  --warn: oklch(0.85 0.14 85);
+  --violet: oklch(0.65 0.18 280);
+  --grid: oklch(0.2 0.01 240 / 0.35);
 }
 
 @theme inline {
@@ -97,23 +80,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-violet: var(--violet);
+  --color-grid: var(--grid);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 }
 
 @layer base {
@@ -124,13 +98,105 @@
     @apply bg-background text-foreground;
   }
 
-  /* Added smooth scrolling for anchor navigation */
   html {
     scroll-behavior: smooth;
+  }
+  body {
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+
+/* ---- Motion ---- */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  filter: blur(4px);
+  transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), filter 0.7s ease;
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Pointer-following highlight on cards */
+.spotlight {
+  position: relative;
+  isolation: isolate;
+}
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%);
+}
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+/* Slowly drifting colour fields behind the hero */
+@keyframes aurora {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(6%, -8%) scale(1.1); }
+  66% { transform: translate(-6%, 6%) scale(0.95); }
+}
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: aurora 18s ease-in-out infinite;
+}
+.dark .aurora {
+  opacity: 0.22;
+}
+
+/* Moving gradient on the headline accent */
+@keyframes gradient-pan {
+  to { background-position: 200% center; }
+}
+.text-gradient {
+  background: linear-gradient(90deg, var(--primary), var(--violet), var(--primary));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 6s linear infinite;
+}
+
+/* Agent step progress */
+@keyframes fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Travelling dash along connectors */
+@keyframes dash {
+  to { stroke-dashoffset: -16; }
+}
+
+.marquee:hover > div {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
 }
