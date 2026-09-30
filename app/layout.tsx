@@ -7,13 +7,12 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "CyberSkope - Managed SOC/SIEM Services | Enterprise Security for SMBs",
+  title: "CyberSkope · Security Engineer Portfolio",
   description:
-    "24/7 threat detection and SIEM services starting at €1,800/month. Expert-managed security monitoring for growing businesses. GDPR compliant, Berlin-based.",
-  generator: "v0.app",
+    "SIEM platform engineering, detection engineering and agentic AI for security operations. Wazuh, Ansible, Terraform, MCP.",
   openGraph: {
-    title: "CyberSkope - Managed SOC/SIEM Services",
-    description: "24/7 threat detection without the enterprise cost. Starting at €1,800/month.",
+    title: "CyberSkope · Security Engineer Portfolio",
+    description: "SIEM platform engineering, detection engineering and agentic AI for the SOC.",
     type: "website",
   },
 }
@@ -24,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="scroll-smooth">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <Suspense fallback={null}>{children}</Suspense>
         <Analytics />

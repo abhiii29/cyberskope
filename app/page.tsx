@@ -1,1034 +1,560 @@
 "use client"
 
-import type React from "react"
+import { useEffect, useRef, useState } from "react"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { ArrowRight, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, ShieldCheck, Terminal, X } from "lucide-react"
+import { logSources, noiseSeries, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
+import { sendContactEmail } from "@/app/actions/contact"
+import { RuleTranslator } from "@/components/rule-lab"
 
-import { useState } from "react"
-import {
-  Shield,
-  Menu,
-  X,
-  Check,
-  AlertTriangle,
-  Zap,
-  TrendingDown,
-  Server,
-  Cloud,
-  Network,
-  Database,
-  FileCheck,
-  AlertCircle,
-  ChevronRight,
-  Mail,
-  Phone,
-  Linkedin,
-  Search,
-  Lock,
-  Package,
-  Target,
-  FileSearch,
-  ShieldCheck,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { sendContactEmail } from "./actions/contact"
+const nav = ["work", "agent", "detection", "lab", "journey", "skills", "terminal", "contact"]
 
-export default function CyberSkopeLanding() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [formSubmitted, setFormSubmitted] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    company: "",
-    message: "",
-  })
+export default function Page() {
+  const [open, setOpen] = useState<Project | null>(null)
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,oklch(0.2_0.01_240/.35)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.2_0.01_240/.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
+      <Header />
+      <Hero />
+      <Stats />
+      <Work onOpen={setOpen} />
+      <Agent />
+      <Detection />
+      <Lab />
+      <Journey />
+      <Skills />
+      <InteractiveTerminal />
+      <Contact />
+      <footer className="relative border-t border-border py-8 text-center font-mono text-xs text-muted-foreground">
+        cyberskope.eu · built with Next.js · read-only by design
+      </footer>
+      {open && <ProjectModal project={open} onClose={() => setOpen(null)} />}
+    </main>
+  )
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setSubmitError(null)
+function Header() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <a href="#" className="flex items-center gap-2 font-mono text-sm font-semibold">
+          <ShieldCheck className="h-5 w-5 text-primary" /> cyberskope<span className="text-primary">_</span>
+        </a>
+        <nav className="hidden gap-6 font-mono text-xs text-muted-foreground md:flex">
+          {nav.map((n) => (
+            <a key={n} href={`#${n}`} className="hover:text-primary">./{n}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+  )
+}
 
-    const result = await sendContactEmail(formData)
+function useTyped(lines: string[], speed = 28) {
+  const [out, setOut] = useState("")
+  useEffect(() => {
+    const full = lines.join("\n")
+    let i = 0
+    const t = setInterval(() => {
+      i++
+      setOut(full.slice(0, i))
+      if (i >= full.length) clearInterval(t)
+    }, speed)
+    return () => clearInterval(t)
+  }, [])
+  return out
+}
 
-    if (result.success) {
-      setFormSubmitted(true)
-      setFormData({ name: "", email: "", company: "", message: "" })
-      setTimeout(() => setFormSubmitted(false), 5000)
-    } else {
-      setSubmitError(result.error || "Failed to send message. Please try again or contact us directly.")
-    }
+const feedTemplates = [
+  { lvl: 12, rule: "100201", msg: "auditd: execve by root outside change window", src: "prod-db-02" },
+  { lvl: 10, rule: "5712", msg: "sshd: brute force attempt (45 failures / 2 min)", src: "edge-gw-01" },
+  { lvl: 7, rule: "550", msg: "FIM: integrity checksum changed /etc/sudoers.d", src: "jump-11" },
+  { lvl: 3, rule: "108014", msg: "postgres: authentication failed for user app_ro", src: "pg-03" },
+  { lvl: 12, rule: "60154", msg: "Windows: member added to Domain Admins", src: "dc-01" },
+  { lvl: 5, rule: "31101", msg: "web: 404 burst from 203.0.113.44 (enriched: AbuseIPDB 98)", src: "waf-02" },
+  { lvl: 0, rule: "100299", msg: "suppressed: known-benign cron (baseline match)", src: "app-07" },
+]
 
-    setIsSubmitting(false)
-  }
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id)
-    element?.scrollIntoView({ behavior: "smooth" })
-    setMobileMenuOpen(false)
-  }
+function Hero() {
+  const typed = useTyped([
+    "$ whoami",
+    "security_engineer  # SIEM · detection · IaC · agentic AI",
+    "$ cat focus.txt",
+    "I build SIEM platforms from code, write detections that",
+    "earn their alerts, and teach AI agents to read logs safely.",
+  ])
+  const [feed, setFeed] = useState<(typeof feedTemplates[number] & { t: string; id: number })[]>([])
+  useEffect(() => {
+    let id = 0
+    const t = setInterval(() => {
+      const f = feedTemplates[Math.floor(Math.random() * feedTemplates.length)]
+      const t = new Date().toISOString().slice(11, 19)
+      setFeed((p) => [{ ...f, t, id: id++ }, ...p].slice(0, 7))
+    }, 1400)
+    return () => clearInterval(t)
+  }, [])
+  const color = (l: number) =>
+    l >= 12 ? "text-red-400" : l >= 7 ? "text-amber-300" : l === 0 ? "text-muted-foreground/60 line-through" : "text-primary"
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-slate-950/95 backdrop-blur-sm border-b border-slate-800 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <Shield className="w-8 h-8 text-cyan-400" />
-              <span className="text-xl font-bold">CyberSkope</span>
-            </div>
-
-            {/* Desktop Menu */}
-            <div className="hidden md:flex items-center gap-8">
-              <button
-                onClick={() => scrollToSection("services")}
-                className="text-slate-300 hover:text-cyan-400 transition-colors"
-              >
-                Services
-              </button>
-              <button
-                onClick={() => scrollToSection("how-it-works")}
-                className="text-slate-300 hover:text-cyan-400 transition-colors"
-              >
-                How It Works
-              </button>
-              <button
-                onClick={() => scrollToSection("pricing")}
-                className="text-slate-300 hover:text-cyan-400 transition-colors"
-              >
-                Pricing
-              </button>
-              <button
-                onClick={() => scrollToSection("about")}
-                className="text-slate-300 hover:text-cyan-400 transition-colors"
-              >
-                About
-              </button>
-              <Button
-                onClick={() => scrollToSection("contact")}
-                className="bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-              >
-                Get Started
-              </Button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-slate-300">
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-          </div>
+    <section className="relative mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-20 md:grid-cols-[1.1fr_1fr] md:pt-28">
+      <div>
+        <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs text-primary">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> Security Engineer · Germany
+        </p>
+        <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
+          Signal over <span className="bg-gradient-to-r from-primary to-[oklch(0.65_0.18_280)] bg-clip-text text-transparent">noise.</span>
+        </h1>
+        <p className="mt-5 max-w-lg text-lg text-muted-foreground">
+          Four years engineering and operating a multi-tenant Wazuh SIEM estate for banking, insurance and public-sector
+          customers. Everything as code, every alert with a reason.
+        </p>
+        <pre className="mt-8 min-h-[140px] whitespace-pre-wrap rounded-lg border border-border bg-card/80 p-4 font-mono text-sm text-foreground/90">
+          {typed}
+          <span className="animate-pulse text-primary">▋</span>
+        </pre>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a href="#work" className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
+            See the work <ArrowRight className="h-4 w-4" />
+          </a>
+          <a href="#terminal" className="inline-flex items-center gap-2 rounded-md border border-border px-5 py-2.5 text-sm hover:border-primary">
+            <Terminal className="h-4 w-4" /> Open the terminal
+          </a>
         </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-slate-900 border-t border-slate-800">
-            <div className="px-4 py-4 space-y-3">
-              <button
-                onClick={() => scrollToSection("services")}
-                className="block w-full text-left text-slate-300 hover:text-cyan-400 transition-colors py-2"
-              >
-                Services
-              </button>
-              <button
-                onClick={() => scrollToSection("how-it-works")}
-                className="block w-full text-left text-slate-300 hover:text-cyan-400 transition-colors py-2"
-              >
-                How It Works
-              </button>
-              <button
-                onClick={() => scrollToSection("pricing")}
-                className="block w-full text-left text-slate-300 hover:text-cyan-400 transition-colors py-2"
-              >
-                Pricing
-              </button>
-              <button
-                onClick={() => scrollToSection("about")}
-                className="block w-full text-left text-slate-300 hover:text-cyan-400 transition-colors py-2"
-              >
-                About
-              </button>
-              <Button
-                onClick={() => scrollToSection("contact")}
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-              >
-                Get Started
-              </Button>
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 border border-cyan-500/30 rounded-full mb-6">
-                <span className="text-sm text-cyan-400">Comprehensive Cybersecurity Partner</span>
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-balance">
-                End-to-End Cyber Defense: From Detection to Prevention
-              </h1>
-              <p className="text-lg text-slate-400 mb-8 text-pretty">
-                We combine Managed SIEM, continuous vulnerability scanning, and supply chain protection to stop threats
-                before they reach you.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Button
-                  onClick={() => scrollToSection("contact")}
-                  size="lg"
-                  className="bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-                >
-                  Get Free Security Assessment
-                </Button>
-                <Button
-                  onClick={() => scrollToSection("how-it-works")}
-                  size="lg"
-                  variant="outline"
-                  className="border-slate-700 hover:border-cyan-500 hover:text-cyan-400"
-                >
-                  See How It Works
-                </Button>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 text-sm text-slate-400">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-cyan-400" />
-                  <span>No long-term contracts</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-cyan-400" />
-                  <span>ISO 27001, SOC 2, GDPR, NIS2 ready</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-slate-400">Active Threats</span>
-                  <AlertTriangle className="w-5 h-5 text-red-500" />
-                </div>
-                <div className="text-4xl font-bold text-red-500">3</div>
-                <div className="text-sm text-slate-500 mt-1">Detected in last 24h</div>
-              </Card>
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-slate-400">Mean Time to Detect</span>
-                  <Zap className="w-5 h-5 text-yellow-500" />
-                </div>
-                <div className="text-4xl font-bold text-yellow-500">12 min</div>
-                <div className="text-sm text-slate-500 mt-1">Industry avg: 197 days</div>
-              </Card>
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-slate-400">False Positive Reduction</span>
-                  <TrendingDown className="w-5 h-5 text-green-500" />
-                </div>
-                <div className="text-4xl font-bold text-green-500">↓ 90%</div>
-                <div className="text-sm text-slate-500 mt-1">Through custom tuning</div>
-              </Card>
-            </div>
-          </div>
+      </div>
+      <div className="rounded-xl border border-border bg-card/70 shadow-2xl shadow-primary/5">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2 font-mono text-xs text-muted-foreground">
+          <span>alerts.live — simulated</span>
+          <span className="flex gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-red-400/70" /><i className="h-2.5 w-2.5 rounded-full bg-amber-300/70" /><i className="h-2.5 w-2.5 rounded-full bg-primary/70" /></span>
         </div>
-      </section>
+        <ul className="space-y-1 p-3 font-mono text-[11px] leading-5 md:text-xs">
+          {feed.map((a) => (
+            <li key={a.id} className="animate-in fade-in slide-in-from-top-1 grid grid-cols-[auto_auto_1fr] gap-2">
+              <span className="text-muted-foreground">{a.t}</span>
+              <span className={color(a.lvl)}>L{String(a.lvl).padStart(2, "0")}</span>
+              <span className={color(a.lvl)}>{a.msg} <span className="text-muted-foreground">@{a.src}</span></span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
 
-      {/* Stats Bar */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-900/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-400 mb-2">3.5M</div>
-              <div className="text-sm text-slate-400">Unfilled Security Jobs</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-400 mb-2">€4.54M</div>
-              <div className="text-sm text-slate-400">Avg. Breach Cost</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-400 mb-2">24/7</div>
-              <div className="text-sm text-slate-400">Monitoring Coverage</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-cyan-400 mb-2">&lt;15min</div>
-              <div className="text-sm text-slate-400">Mean Time to Detect</div>
-            </div>
+function Counter({ to, suffix }: { to: number; suffix: string }) {
+  const [n, setN] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return
+      io.disconnect()
+      const start = performance.now()
+      const step = (now: number) => {
+        const p = Math.min(1, (now - start) / 1200)
+        setN(Math.round(to * (1 - Math.pow(1 - p, 3))))
+        if (p < 1) requestAnimationFrame(step)
+      }
+      requestAnimationFrame(step)
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [to])
+  return <span ref={ref}>{n}{suffix}</span>
+}
+
+function Stats() {
+  return (
+    <section className="relative border-y border-border bg-card/40">
+      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 md:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <div className="font-mono text-4xl font-bold text-primary"><Counter to={s.value} suffix={s.suffix} /></div>
+            <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
           </div>
+        ))}
+      </div>
+      <div className="overflow-hidden border-t border-border py-3">
+        <div className="flex w-max animate-[marquee_40s_linear_infinite] gap-8 font-mono text-xs text-muted-foreground">
+          {[...logSources, ...logSources].map((l, i) => (
+            <span key={i} className="whitespace-nowrap">◆ {l}</span>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* Services Section */}
-      <section id="services" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What We Monitor & Protect</h2>
-            <p className="text-lg text-slate-400">Comprehensive security coverage for your entire infrastructure</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
-              <Server className="w-10 h-10 text-cyan-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Endpoint Security</h3>
-              <p className="text-slate-400">
-                Windows, Linux, macOS monitoring with EDR/EPP integration for comprehensive endpoint protection.
-              </p>
-            </Card>
-
-            <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
-              <Cloud className="w-10 h-10 text-cyan-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Cloud Infrastructure</h3>
-              <p className="text-slate-400">
-                AWS, Azure, GCP monitoring including IAM, GuardDuty, and Security Hub integration.
-              </p>
-            </Card>
-
-            <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
-              <Network className="w-10 h-10 text-cyan-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Network & Applications</h3>
-              <p className="text-slate-400">Firewall logs, web application monitoring, and API security analysis.</p>
-            </Card>
-
-            <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
-              <Database className="w-10 h-10 text-cyan-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Threat Intelligence</h3>
-              <p className="text-slate-400">
-                Real-time threat intelligence enrichment using multiple industry-leading feeds and IOC databases.
-              </p>
-            </Card>
-
-            <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
-              <FileCheck className="w-10 h-10 text-cyan-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Compliance Reporting</h3>
-              <p className="text-slate-400">ISO 27001, SOC 2, GDPR, and PCI-DSS compliance reporting and monitoring.</p>
-            </Card>
-
-            <Card className="bg-slate-900 border-slate-800 p-6 hover:border-cyan-500/50 transition-colors">
-              <AlertCircle className="w-10 h-10 text-cyan-400 mb-4" />
-              <h3 className="text-xl font-semibold mb-3">Incident Response</h3>
-              <p className="text-slate-400">Root cause analysis and remediation guidance for detected threats.</p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-6">
-                <Search className="w-4 h-4 text-cyan-400" />
-                <span className="text-sm text-cyan-400">Proactive Defense</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6">Find Weaknesses Before Attackers Do</h2>
-              <p className="text-lg text-slate-400 mb-8">
-                We run automated and manual vulnerability scans across your cloud, infrastructure, and applications —
-                identifying misconfigurations, outdated software, and exploitable flaws. Our team prioritizes what
-                matters most and guides you through remediation.
-              </p>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Continuous Vulnerability Scanning</div>
-                    <div className="text-sm text-slate-400">Automated scans across your entire infrastructure</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Patch & Remediation Prioritization</div>
-                    <div className="text-sm text-slate-400">Focus on what matters most to your business</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Cloud and On-Prem Coverage</div>
-                    <div className="text-sm text-slate-400">Complete visibility across hybrid environments</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Penetration Testing on Request</div>
-                    <div className="text-sm text-slate-400">Expert-led security assessments when you need them</div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Target className="w-8 h-8 text-cyan-400" />
-                  <h3 className="text-xl font-semibold">Vulnerability Management</h3>
-                </div>
-                <p className="text-slate-400 mb-4">
-                  Identify, assess, and remediate security vulnerabilities before they can be exploited.
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-950 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-red-400 mb-1">Critical</div>
-                    <div className="text-xs text-slate-500">High-priority fixes</div>
-                  </div>
-                  <div className="bg-slate-950 rounded-lg p-4">
-                    <div className="text-2xl font-bold text-yellow-400 mb-1">Medium</div>
-                    <div className="text-xs text-slate-500">Scheduled patches</div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <FileSearch className="w-8 h-8 text-cyan-400" />
-                  <h3 className="text-xl font-semibold">Security Posture</h3>
-                </div>
-                <p className="text-slate-400 mb-4">Continuous assessment of your overall security health.</p>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 bg-slate-950 rounded-full h-3 overflow-hidden">
-                    <div className="bg-gradient-to-r from-cyan-500 to-cyan-400 h-full w-4/5"></div>
-                  </div>
-                  <span className="text-2xl font-bold text-cyan-400">80%</span>
-                </div>
-                <div className="text-xs text-slate-500 mt-2">Security score improving</div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 grid grid-cols-1 gap-4">
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Package className="w-8 h-8 text-cyan-400" />
-                  <h3 className="text-xl font-semibold">Dependency Analysis</h3>
-                </div>
-                <p className="text-slate-400 mb-4">
-                  Monitor open-source components and software dependencies for known vulnerabilities.
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">Dependencies scanned</span>
-                    <span className="text-cyan-400 font-semibold">1,247</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">Vulnerabilities found</span>
-                    <span className="text-yellow-400 font-semibold">12</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">Critical issues</span>
-                    <span className="text-red-400 font-semibold">2</span>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-slate-900 border-slate-800 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <ShieldCheck className="w-8 h-8 text-cyan-400" />
-                  <h3 className="text-xl font-semibold">Vendor Risk Assessment</h3>
-                </div>
-                <p className="text-slate-400">
-                  Evaluate and monitor third-party vendors for security compliance and risk exposure.
-                </p>
-              </Card>
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-6">
-                <Lock className="w-4 h-4 text-cyan-400" />
-                <span className="text-sm text-cyan-400">Supply Chain Security</span>
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6">Secure Your Software Supply Chain</h2>
-              <p className="text-lg text-slate-400 mb-8">
-                Cyber threats often strike through trusted partners and software dependencies. We help you assess,
-                monitor, and protect your external vendors, open-source components, and CI/CD pipelines.
-              </p>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Vendor and Third-Party Risk Assessments</div>
-                    <div className="text-sm text-slate-400">Evaluate security posture of your partners</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Dependency & Software Component Analysis (SBOM)</div>
-                    <div className="text-sm text-slate-400">Track and secure your software bill of materials</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Continuous Monitoring of External Exposure</div>
-                    <div className="text-sm text-slate-400">Real-time alerts on third-party vulnerabilities</div>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <div className="font-semibold text-slate-200">Compliance with NIS2 and ISO 27001</div>
-                    <div className="text-sm text-slate-400">Meet regulatory requirements for supply chain security</div>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">How It Works</h2>
-            <p className="text-lg text-slate-400">Get started with comprehensive cybersecurity in five simple steps</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
-                <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
-                  1
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Discovery</h3>
-                <p className="text-slate-400">
-                  Assess your current infrastructure and identify security risks through comprehensive consultation.
-                </p>
-              </div>
-              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
-            </div>
-
-            <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
-                <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
-                  2
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Scanning & Analysis</h3>
-                <p className="text-slate-400">
-                  Identify vulnerabilities and supply chain exposures across your entire digital ecosystem.
-                </p>
-              </div>
-              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
-            </div>
-
-            <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
-                <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
-                  3
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Deployment</h3>
-                <p className="text-slate-400">
-                  Integrate SIEM, sensors, and endpoint protection with custom tuning for your environment.
-                </p>
-              </div>
-              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
-            </div>
-
-            <div className="relative">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
-                <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
-                  4
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Monitoring</h3>
-                <p className="text-slate-400">24/7 SOC operations with expert security analysts and alert triage.</p>
-              </div>
-              <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-cyan-500/30" />
-            </div>
-
-            <div>
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-6 h-full">
-                <div className="w-12 h-12 bg-cyan-500/10 border border-cyan-500/30 rounded-full flex items-center justify-center text-cyan-400 font-bold text-xl mb-4">
-                  5
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Remediation & Reporting</h3>
-                <p className="text-slate-400">
-                  Guided fixes, compliance dashboards, and executive summaries for continuous improvement.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Flexible Security Solutions</h2>
-            <p className="text-lg text-slate-400">Tailored security packages designed for your business needs</p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8 mb-8">
-            {/* Starter */}
-            <Card className="bg-slate-900 border-slate-800 p-8">
-              <h3 className="text-2xl font-bold mb-2">Starter</h3>
-              <div className="mb-6">
-                <span className="text-lg text-slate-400">Managed SIEM + Monthly Vulnerability Scan</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Up to 25 endpoints</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Monthly vulnerability scanning</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Business hours support (9-5 CET)</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Weekly security reports</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Basic detection rules</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Email & Slack alerts</span>
-                </li>
-              </ul>
-              <Button
-                onClick={() => scrollToSection("contact")}
-                variant="outline"
-                className="w-full border-slate-700 hover:border-cyan-500 hover:text-cyan-400"
-              >
-                Contact Us
-              </Button>
-            </Card>
-
-            {/* Professional - Most Popular */}
-            <Card className="bg-slate-900 border-cyan-500 p-8 relative shadow-lg shadow-cyan-500/20">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-cyan-500 text-slate-950 px-4 py-1 rounded-full text-sm font-semibold">
-                Most Popular
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Professional</h3>
-              <div className="mb-6">
-                <span className="text-lg text-slate-400">Continuous Scanning + Supply Chain Monitoring</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Up to 100 endpoints</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Continuous vulnerability scanning</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Supply chain monitoring (SBOM)</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">24/7 monitoring & alerting</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Custom detection engineering</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Quarterly threat hunting</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Dedicated Slack channel</span>
-                </li>
-              </ul>
-              <Button
-                onClick={() => scrollToSection("contact")}
-                className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-              >
-                Contact Us
-              </Button>
-            </Card>
-
-            {/* Enterprise */}
-            <Card className="bg-slate-900 border-slate-800 p-8">
-              <h3 className="text-2xl font-bold mb-2">Enterprise</h3>
-              <div className="mb-6">
-                <span className="text-lg text-slate-400">Full SOC + Supply Chain + Penetration Testing</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">200+ endpoints</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Advanced penetration testing</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Full supply chain protection</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Dedicated security analyst</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Custom integrations</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">On-demand incident response</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Executive security reviews</span>
-                </li>
-              </ul>
-              <Button
-                onClick={() => scrollToSection("contact")}
-                variant="outline"
-                className="w-full border-slate-700 hover:border-cyan-500 hover:text-cyan-400"
-              >
-                Contact Us
-              </Button>
-            </Card>
-          </div>
-
-          <p className="text-center text-sm text-slate-400">
-            Contact us for a custom quote tailored to your specific security needs and infrastructure
-          </p>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12">
-            <div>
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6">Built by Security Engineers, For Security</h2>
-              <p className="text-lg text-slate-400 mb-6">
-                Founded by experienced security engineers with extensive Blue Team, SIEM, and DevSecOps experience.
-                CyberSkope was created to democratize enterprise-grade security, making world-class threat detection
-                accessible to businesses of all sizes.
-              </p>
-              <p className="text-lg text-slate-400 mb-8">
-                We believe every business deserves enterprise-grade security, regardless of size. By leveraging
-                automation and expert engineering, we deliver world-class threat detection at a fraction of traditional
-                costs.
-              </p>
-
-              <div className="grid sm:grid-cols-3 gap-4">
-                <Card className="bg-slate-900 border-slate-800 p-6 text-center">
-                  <div className="text-3xl font-bold text-cyan-400 mb-2">90%</div>
-                  <div className="text-sm text-slate-400">False Positive Reduction</div>
-                  <div className="text-xs text-slate-500 mt-2">Through custom detection engineering</div>
-                </Card>
-                <Card className="bg-slate-900 border-slate-800 p-6 text-center">
-                  <div className="text-3xl font-bold text-cyan-400 mb-2">25%</div>
-                  <div className="text-sm text-slate-400">Faster Detection</div>
-                  <div className="text-xs text-slate-500 mt-2">With XDR-driven visibility</div>
-                </Card>
-                <Card className="bg-slate-900 border-slate-800 p-6 text-center">
-                  <div className="text-3xl font-bold text-cyan-400 mb-2">EU</div>
-                  <div className="text-sm text-slate-400">Berlin-Based</div>
-                  <div className="text-xs text-slate-500 mt-2">Multi-framework compliance ready</div>
-                </Card>
-              </div>
-            </div>
-
-            <Card className="bg-slate-900 border-slate-800 p-8">
-              <h3 className="text-2xl font-bold mb-6">Why Choose Us?</h3>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">
-                    Cost-effective solutions significantly lower than commercial SIEMs
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Automation-first approach reduces operational overhead</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Custom detection rules tailored to your business</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Direct access to your SIEM dashboard (full transparency)</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">Expert-led service ensures quality at every step</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <Check className="w-5 h-5 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-300">No vendor lock-in, portable configurations</span>
-                </li>
-              </ul>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-900/30 to-slate-950">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/10 border border-cyan-500/30 rounded-full mb-6">
-            <Shield className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-cyan-400">Free Security Assessment</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-            Know Where You Stand — Get a Free Vulnerability & Risk Assessment
-          </h2>
-          <p className="text-lg text-slate-400 mb-8">
-            Discover your security gaps before attackers do. Our comprehensive assessment identifies vulnerabilities,
-            supply chain risks, and compliance gaps across your entire infrastructure.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              onClick={() => scrollToSection("contact")}
-              size="lg"
-              className="bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-            >
-              Schedule My Assessment
-              <ChevronRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button
-              onClick={() => scrollToSection("how-it-works")}
-              size="lg"
-              variant="outline"
-              className="border-slate-700 hover:border-cyan-500 hover:text-cyan-400"
-            >
-              Learn More
-            </Button>
-          </div>
-          <p className="text-sm text-slate-500 mt-6">
-            No commitment required • Detailed report included • Expert recommendations
-          </p>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">Get Your Free Security Assessment</h2>
-            <p className="text-lg text-slate-400">
-              Let's discuss your security needs and how we can help protect your business
-            </p>
-          </div>
-
-          {formSubmitted ? (
-            <Card className="bg-slate-900 border-cyan-500 p-12 text-center">
-              <Check className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
-              <h3 className="text-2xl font-bold mb-2">Thank You!</h3>
-              <p className="text-slate-400">We'll get back to you within 24 hours.</p>
-            </Card>
-          ) : (
-            <Card className="bg-slate-900 border-slate-800 p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium mb-2">
-                      Name *
-                    </label>
-                    <Input
-                      id="name"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="bg-slate-950 border-slate-700 focus:border-cyan-500"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium mb-2">
-                      Email *
-                    </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="bg-slate-950 border-slate-700 focus:border-cyan-500"
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="company" className="block text-sm font-medium mb-2">
-                    Company Name *
-                  </label>
-                  <Input
-                    id="company"
-                    required
-                    value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    className="bg-slate-950 border-slate-700 focus:border-cyan-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium mb-2">
-                    Message
-                  </label>
-                  <Textarea
-                    id="message"
-                    rows={5}
-                    placeholder="Tell us about your security needs - number of endpoints, compliance requirements, current setup..."
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="bg-slate-950 border-slate-700 focus:border-cyan-500"
-                    disabled={isSubmitting}
-                  />
-                </div>
-                {submitError && (
-                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
-                    {submitError}
-                  </div>
-                )}
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-slate-950"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Sending..." : "Request Free Assessment"}
-                  {!isSubmitting && <ChevronRight className="w-5 h-5 ml-2" />}
-                </Button>
-                <p className="text-xs text-slate-500 text-center">
-                  By submitting, you agree to our privacy policy. We'll never share your information.
-                </p>
-              </form>
-
-              <div className="mt-8 pt-8 border-t border-slate-800">
-                <p className="text-sm text-slate-400 mb-4 text-center">Or reach out directly:</p>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                  <a
-                    href="mailto:info@cyberskope.eu"
-                    className="flex items-center gap-2 text-slate-300 hover:text-cyan-400 transition-colors"
-                  >
-                    <Mail className="w-5 h-5" />
-                    <span>info@cyberskope.eu</span>
-                  </a>
-                  <a
-                    href="tel:+4915207610022"
-                    className="flex items-center gap-2 text-slate-300 hover:text-cyan-400 transition-colors"
-                  >
-                    <Phone className="w-5 h-5" />
-                    <span>+49 1520 761 0022</span>
-                  </a>
-                </div>
-
-                <div className="flex items-center justify-center gap-4 mt-6">
-                  <a
-                    href="https://www.linkedin.com/company/cyberskope"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-cyan-400 transition-colors"
-                  >
-                    <Linkedin className="w-6 h-6" />
-                  </a>
-                </div>
-              </div>
-            </Card>
-          )}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-slate-900/50 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Shield className="w-6 h-6 text-cyan-400" />
-                <span className="text-lg font-bold">CyberSkope</span>
-              </div>
-              <p className="text-sm text-slate-400">
-                Enterprise-grade security monitoring for SMBs. Built in Berlin, protecting businesses across Europe.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Services</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Managed Detection
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    SIEM Services
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Vulnerability Management
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Supply Chain Security
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>
-                  <button onClick={() => scrollToSection("about")} className="hover:text-cyan-400 transition-colors">
-                    About Us
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection("pricing")} className="hover:text-cyan-400 transition-colors">
-                    Pricing
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => scrollToSection("contact")} className="hover:text-cyan-400 transition-colors">
-                    Contact
-                  </button>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-cyan-400 transition-colors">
-                    GDPR
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-            © 2025 CyberSkope. All rights reserved. Based in Berlin, Germany.
-          </div>
-        </div>
-      </footer>
+function SectionHead({ id, kicker, title, sub }: { id: string; kicker: string; title: string; sub?: string }) {
+  return (
+    <div id={id} className="scroll-mt-20">
+      <p className="font-mono text-xs uppercase tracking-widest text-primary">{kicker}</p>
+      <h2 className="mt-2 text-3xl font-bold md:text-4xl">{title}</h2>
+      {sub && <p className="mt-3 max-w-2xl text-muted-foreground">{sub}</p>}
     </div>
+  )
+}
+
+function Work({ onOpen }: { onOpen: (p: Project) => void }) {
+  return (
+    <section className="relative mx-auto max-w-6xl px-4 py-24">
+      <SectionHead id="work" kicker="01 · selected work" title="Case studies" sub="Customer names withheld. Numbers are real." />
+      <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {projects.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onOpen(p)}
+            className="group flex flex-col rounded-xl border border-border bg-card/70 p-6 text-left transition hover:-translate-y-1 hover:border-primary/60"
+          >
+            <span className="font-mono text-xs text-muted-foreground">{p.tag}</span>
+            <h3 className="mt-2 text-lg font-semibold group-hover:text-primary">{p.title}</h3>
+            <p className="mt-2 flex-1 text-sm text-muted-foreground">{p.summary}</p>
+            <div className="mt-5 border-t border-border pt-4">
+              <div className="font-mono text-2xl font-bold text-primary">{p.metric.value}</div>
+              <div className="text-xs text-muted-foreground">{p.metric.label}</div>
+            </div>
+            <span className="mt-4 inline-flex items-center gap-1 font-mono text-xs text-primary opacity-0 transition group-hover:opacity-100">
+              read more <ArrowRight className="h-3 w-3" />
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    window.addEventListener("keydown", k)
+    return () => window.removeEventListener("keydown", k)
+  }, [onClose])
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <span className="font-mono text-xs text-muted-foreground">{project.tag}</span>
+            <h3 className="mt-1 text-2xl font-bold">{project.title}</h3>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-muted"><X className="h-5 w-5" /></button>
+        </div>
+        <p className="mt-3 text-muted-foreground">{project.summary}</p>
+        <ul className="mt-6 space-y-3">
+          {project.details.map((d) => (
+            <li key={d} className="flex gap-3 text-sm"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />{d}</li>
+          ))}
+        </ul>
+        <div className="mt-6 flex flex-wrap gap-2">
+          {project.stack.map((s) => (
+            <span key={s} className="rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground">{s}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const agentSteps = [
+  { icon: Database, title: "Collect", body: "Code aggregates 24h of alerts per instance and diffs against a Git-reviewed baseline and last week." },
+  { icon: Cpu, title: "Facts JSON", body: "Millions of alerts become a few KB of exact facts. No raw logs in the prompt." },
+  { icon: Bot, title: "Agent loop", body: "A self-hosted LLM triages and drills down through read-only MCP tools, max 15 calls." },
+  { icon: Lock, title: "Validate", body: "Any number or IP not traceable to a tool result is removed. Unreachable = NOT CHECKED." },
+  { icon: GitBranch, title: "Publish", body: "One report page per day, one ticket per High/Critical finding." },
+]
+
+function Agent() {
+  const [active, setActive] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setActive((a) => (a + 1) % agentSteps.length), 2200)
+    return () => clearInterval(t)
+  }, [])
+  return (
+    <section className="relative border-y border-border bg-card/30">
+      <div className="mx-auto max-w-6xl px-4 py-24">
+        <SectionHead
+          id="agent"
+          kicker="02 · agentic AI"
+          title="An AI analyst that can't make things up"
+          sub="Design for an on-prem agent that does the daily SOC review across a multi-tenant SIEM estate. Deterministic where it must be exact, an LLM only where judgement helps."
+        />
+        <div className="mt-12 grid gap-4 md:grid-cols-5">
+          {agentSteps.map((s, i) => (
+            <button
+              key={s.title}
+              onClick={() => setActive(i)}
+              className={`relative rounded-xl border p-5 text-left transition ${i === active ? "border-primary bg-primary/10" : "border-border bg-card/60"}`}
+            >
+              <s.icon className={`h-6 w-6 ${i === active ? "text-primary" : "text-muted-foreground"}`} />
+              <div className="mt-3 font-mono text-xs text-muted-foreground">step {i + 1}</div>
+              <div className="font-semibold">{s.title}</div>
+              <p className="mt-2 text-xs text-muted-foreground">{s.body}</p>
+              {i < agentSteps.length - 1 && <ArrowRight className="absolute -right-3.5 top-1/2 hidden h-4 w-4 text-border md:block" />}
+            </button>
+          ))}
+        </div>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {[
+            ["Read-only", "wazuh:read scope end to end; credentials never leave the proxy."],
+            ["Injection-aware", "Every log field is treated as untrusted input to the model."],
+            ["Shadow mode", "Runs beside the human dailies until it misses no High finding."],
+          ].map(([t, b]) => (
+            <div key={t} className="rounded-lg border border-border p-4">
+              <div className="font-mono text-sm text-primary">✓ {t}</div>
+              <p className="mt-1 text-sm text-muted-foreground">{b}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Detection() {
+  return (
+    <section className="relative mx-auto max-w-6xl px-4 py-24">
+      <SectionHead
+        id="detection"
+        kicker="03 · detection engineering"
+        title="Tuning with evidence"
+        sub="A mount-syscall use case was flooding analysts. Root cause: a firmware updater. Removing it took the rule from ~194 to ~12 alerts per hour, and the RCA went to the customer."
+      />
+      <div className="mt-10 grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="h-72 rounded-xl border border-border bg-card/60 p-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={noiseSeries}>
+              <CartesianGrid stroke="oklch(0.25 0.01 240)" strokeDasharray="3 3" />
+              <XAxis dataKey="hour" stroke="oklch(0.6 0.01 240)" fontSize={12} tickFormatter={(h) => `${h}:00`} />
+              <YAxis stroke="oklch(0.6 0.01 240)" fontSize={12} />
+              <Tooltip contentStyle={{ background: "oklch(0.15 0.01 240)", border: "1px solid oklch(0.25 0.01 240)", fontSize: 12 }} />
+              <Area type="monotone" dataKey="before" name="before (alerts/h)" stroke="oklch(0.6 0.2 25)" fill="oklch(0.6 0.2 25 / .2)" />
+              <Area type="monotone" dataKey="after" name="after (alerts/h)" stroke="oklch(0.7 0.15 195)" fill="oklch(0.7 0.15 195 / .3)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="space-y-4">
+          {[
+            ["99.1%", "of a level-7 population cleared by a single reviewed suppression"],
+            ["73%", "of one rule's alerts traced to a minutely root cron job"],
+            ["96", "suppression values reviewed one by one"],
+          ].map(([v, l]) => (
+            <div key={v} className="rounded-lg border border-border bg-card/60 p-4">
+              <div className="font-mono text-2xl font-bold text-primary">{v}</div>
+              <div className="text-sm text-muted-foreground">{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+const sampleLog =
+  'type=EXECVE msg=audit(1727700000.123:4411): argc=3 a0="sudo" a1="-u" a2="postgres" AUID="alice" UID="root"'
+
+function Lab() {
+  const [tab, setTab] = useState<"translate" | "decode">("translate")
+  return (
+    <section className="relative border-y border-border bg-card/30">
+      <div className="mx-auto max-w-6xl px-4 py-24">
+        <SectionHead
+          id="lab"
+          kicker="04 · lab"
+          title="Rule translator"
+          sub="Paste a Sigma rule and get Splunk, Elastic, Sentinel, LogScale and Wazuh queries, plus an honest list of what each translation lost. Runs entirely in your browser; nothing is sent anywhere."
+        />
+        <div className="mt-8 flex gap-2">
+          {([["translate", "Translate a rule"], ["decode", "Decode a log"]] as const).map(([k, l]) => (
+            <button
+              key={k}
+              onClick={() => setTab(k)}
+              className={`rounded-full border px-4 py-1.5 font-mono text-xs transition ${tab === k ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <div className="mt-6">{tab === "translate" ? <RuleTranslator /> : <DecoderDemo />}</div>
+      </div>
+    </section>
+  )
+}
+
+function DecoderDemo() {
+  const [line, setLine] = useState(sampleLog)
+  const fields = [...line.matchAll(/(\w+)=("[^"]*"|\S+)/g)].map((m) => [m[1], m[2].replace(/"/g, "")])
+  const cmd = fields.filter(([k]) => /^a\d+$/.test(k)).map(([, v]) => v).join(" ")
+  const isPriv = /sudo|su\b/.test(cmd)
+  return (
+    <div className="rounded-xl border border-border bg-card/60 p-5">
+      <div className="flex items-center justify-between">
+        <div className="font-mono text-sm">decoder playground <span className="text-muted-foreground">— edit the log line</span></div>
+        <button onClick={() => setLine(sampleLog)} className="font-mono text-xs text-primary">reset</button>
+      </div>
+      <input
+        value={line}
+        onChange={(e) => setLine(e.target.value)}
+        className="mt-3 w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary"
+      />
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <table className="font-mono text-xs">
+          <tbody>
+            {fields.map(([k, v], i) => (
+              <tr key={i} className="border-b border-border/50"><td className="py-1 pr-4 text-primary">{k}</td><td className="text-foreground/80">{v}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="rounded border border-border bg-background p-3 font-mono text-xs">
+          <div className="text-muted-foreground">** Phase 3: rule matching</div>
+          <div>command: <span className="text-primary">{cmd || "—"}</span></div>
+          <div className={isPriv ? "text-amber-300" : "text-muted-foreground"}>
+            {isPriv ? "rule 100205 (level 10): privilege change via sudo" : "no rule matched"}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Journey() {
+  const [open, setOpen] = useState(timeline.length - 1)
+  return (
+    <section className="relative border-y border-border bg-card/30">
+      <div className="mx-auto max-w-4xl px-4 py-24">
+        <SectionHead id="journey" kicker="05 · journey" title="Four years, five phases" />
+        <ol className="mt-10 border-l border-border">
+          {timeline.map((t, i) => (
+            <li key={t.period} className="relative pb-6 pl-8">
+              <span className={`absolute -left-[7px] top-1.5 h-3.5 w-3.5 rounded-full border-2 ${i === open ? "border-primary bg-primary" : "border-border bg-background"}`} />
+              <button onClick={() => setOpen(i === open ? -1 : i)} className="flex w-full items-center justify-between text-left">
+                <div>
+                  <div className="font-mono text-xs text-primary">{t.period}</div>
+                  <div className="font-semibold">{t.title}</div>
+                </div>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${i === open ? "rotate-180" : ""}`} />
+              </button>
+              {i === open && (
+                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  {t.points.map((p) => <li key={p}>→ {p}</li>)}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
+function Skills() {
+  const cats = Object.keys(skills)
+  const [cat, setCat] = useState(cats[0])
+  return (
+    <section className="relative mx-auto max-w-6xl px-4 py-24">
+      <SectionHead id="skills" kicker="06 · toolbox" title="What I work with" />
+      <div className="mt-8 flex flex-wrap gap-2">
+        {cats.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCat(c)}
+            className={`rounded-full border px-4 py-1.5 font-mono text-xs transition ${c === cat ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary"}`}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+      <div className="mt-6 flex flex-wrap gap-3">
+        {skills[cat].map((s) => (
+          <span key={s} className="animate-in fade-in zoom-in-95 rounded-lg border border-border bg-card/70 px-4 py-2 text-sm">{s}</span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const commands: Record<string, string> = {
+  help: "commands: whoami, stack, projects, agent, stats, contact, clear",
+  whoami: "Security engineer. SIEM platform + detection engineering, 4+ years. Name withheld for now.",
+  stack: Object.entries(skills).map(([k, v]) => `${k.padEnd(12)} ${v.slice(0, 4).join(", ")}`).join("\n"),
+  projects: projects.map((p) => `- ${p.title}: ${p.metric.value} ${p.metric.label}`).join("\n"),
+  agent: "facts JSON → LLM triage → read-only MCP drill-down → validation → daily report.\nNo external LLM API. Every tool call audit-logged.",
+  stats: stats.map((s) => `${s.value}${s.suffix} ${s.label}`).join("\n"),
+  contact: "scroll down, or: echo hello > #contact",
+  "sudo rm -rf /": "nice try. this terminal is read-only by design. 🔒",
+}
+
+function InteractiveTerminal() {
+  const [hist, setHist] = useState<{ cmd: string; out: string }[]>([{ cmd: "help", out: commands.help }])
+  const [val, setVal] = useState("")
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (box.current) box.current.scrollTop = box.current.scrollHeight
+  }, [hist])
+  const run = (e: React.FormEvent) => {
+    e.preventDefault()
+    const c = val.trim()
+    if (!c) return
+    if (c === "clear") setHist([])
+    else setHist((h) => [...h, { cmd: c, out: commands[c] ?? `command not found: ${c} (try 'help')` }])
+    setVal("")
+  }
+  return (
+    <section className="relative border-y border-border bg-card/30">
+      <div className="mx-auto max-w-4xl px-4 py-24">
+        <SectionHead id="terminal" kicker="07 · shell" title="Prefer a terminal?" />
+        <div className="mt-8 rounded-xl border border-border bg-background shadow-2xl" onClick={() => document.getElementById("term-in")?.focus()}>
+          <div className="border-b border-border px-4 py-2 font-mono text-xs text-muted-foreground">guest@cyberskope:~</div>
+          <div ref={box} className="h-80 overflow-y-auto p-4 font-mono text-sm">
+            {hist.map((h, i) => (
+              <div key={i} className="mb-3">
+                <div><span className="text-primary">$</span> {h.cmd}</div>
+                <pre className="whitespace-pre-wrap text-muted-foreground">{h.out}</pre>
+              </div>
+            ))}
+            <form onSubmit={run} className="flex gap-2">
+              <span className="text-primary">$</span>
+              <input id="term-in" value={val} onChange={(e) => setVal(e.target.value)} autoComplete="off" className="flex-1 bg-transparent outline-none" aria-label="terminal input" />
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Contact() {
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle")
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    setState("sending")
+    const res = await sendContactEmail({
+      name: String(f.get("name")),
+      email: String(f.get("email")),
+      company: "",
+      message: String(f.get("message")),
+    }).catch(() => ({ success: false }))
+    setState(res?.success ? "sent" : "error")
+  }
+  return (
+    <section className="relative mx-auto max-w-3xl px-4 py-24">
+      <SectionHead id="contact" kicker="08 · contact" title="Let's talk" sub="Roles in detection engineering, SIEM platform work or security automation." />
+      {state === "sent" ? (
+        <p className="mt-8 rounded-lg border border-primary/40 bg-primary/10 p-4 font-mono text-sm">✓ message delivered. I'll reply soon.</p>
+      ) : (
+        <form onSubmit={submit} className="mt-8 grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <input required name="name" placeholder="Name" className="rounded-md border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary" />
+            <input required type="email" name="email" placeholder="Email" className="rounded-md border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary" />
+          </div>
+          <textarea required name="message" rows={5} placeholder="Message" className="rounded-md border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary" />
+          <button disabled={state === "sending"} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
+            <Mail className="h-4 w-4" /> {state === "sending" ? "Sending…" : "Send message"}
+          </button>
+          {state === "error" && <p className="text-sm text-red-400">Couldn't send right now. Please try again later.</p>}
+        </form>
+      )}
+    </section>
   )
 }
