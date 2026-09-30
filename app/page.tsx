@@ -6,6 +6,8 @@ import { ArrowRight, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, Shi
 import { logSources, noiseSeries, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
 import { sendContactEmail } from "@/app/actions/contact"
 import { RuleTranslator } from "@/components/rule-lab"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { Reveal, spotlight, useActiveSection, useScrollProgress } from "@/components/motion"
 
 const nav = ["work", "agent", "detection", "lab", "journey", "skills", "terminal", "contact"]
 
@@ -13,7 +15,7 @@ export default function Page() {
   const [open, setOpen] = useState<Project | null>(null)
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,oklch(0.2_0.01_240/.35)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.2_0.01_240/.35)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,var(--grid)_1px,transparent_1px),linear-gradient(to_bottom,var(--grid)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]" />
       <Header />
       <Hero />
       <Stats />
@@ -34,17 +36,35 @@ export default function Page() {
 }
 
 function Header() {
+  const progress = useScrollProgress()
+  const active = useActiveSection(nav)
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur">
+      <div
+        className="absolute bottom-0 left-0 h-px w-full origin-left bg-gradient-to-r from-primary to-violet"
+        style={{ transform: `scaleX(${progress})` }}
+      />
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a href="#" className="flex items-center gap-2 font-mono text-sm font-semibold">
           <ShieldCheck className="h-5 w-5 text-primary" /> cyberskope<span className="text-primary">_</span>
         </a>
-        <nav className="hidden gap-6 font-mono text-xs text-muted-foreground md:flex">
-          {nav.map((n) => (
-            <a key={n} href={`#${n}`} className="hover:text-primary">./{n}</a>
-          ))}
-        </nav>
+        <div className="flex items-center gap-6">
+          <nav className="hidden gap-5 font-mono text-xs text-muted-foreground md:flex">
+            {nav.map((n) => (
+              <a
+                key={n}
+                href={`#${n}`}
+                className={`relative transition-colors hover:text-primary ${active === n ? "text-primary" : ""}`}
+              >
+                ./{n}
+                <span
+                  className={`absolute -bottom-1 left-0 h-px w-full origin-left bg-primary transition-transform duration-300 ${active === n ? "scale-x-100" : "scale-x-0"}`}
+                />
+              </a>
+            ))}
+          </nav>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   )
@@ -94,16 +114,26 @@ function Hero() {
     return () => clearInterval(t)
   }, [])
   const color = (l: number) =>
-    l >= 12 ? "text-red-400" : l >= 7 ? "text-amber-300" : l === 0 ? "text-muted-foreground/60 line-through" : "text-primary"
+    l >= 12 ? "text-danger" : l >= 7 ? "text-warn" : l === 0 ? "text-muted-foreground/60 line-through" : "text-primary"
 
   return (
+    <div className="relative overflow-hidden">
+      {/* Full-width glow, faded at every edge so it has no visible boundary */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_70%_80%_at_50%_40%,black_40%,transparent_100%)]"
+      >
+        <div className="aurora left-[5%] top-[5%] h-[28rem] w-[28rem] bg-primary" />
+        <div className="aurora right-[5%] top-[25%] h-[32rem] w-[32rem] bg-violet [animation-delay:-6s]" />
+        <div className="aurora bottom-[-15%] left-[35%] h-80 w-80 bg-primary [animation-delay:-12s]" />
+      </div>
     <section className="relative mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-20 md:grid-cols-[1.1fr_1fr] md:pt-28">
-      <div>
+      <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-700">
         <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-mono text-xs text-primary">
           <span className="h-2 w-2 animate-pulse rounded-full bg-primary" /> Security Engineer · Germany
         </p>
         <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
-          Signal over <span className="bg-gradient-to-r from-primary to-[oklch(0.65_0.18_280)] bg-clip-text text-transparent">noise.</span>
+          Signal over <span className="text-gradient">noise.</span>
         </h1>
         <p className="mt-5 max-w-lg text-lg text-muted-foreground">
           Four years engineering and operating a multi-tenant Wazuh SIEM estate for banking, insurance and public-sector
@@ -122,10 +152,10 @@ function Hero() {
           </a>
         </div>
       </div>
-      <div className="rounded-xl border border-border bg-card/70 shadow-2xl shadow-primary/5">
+      <div className="relative rounded-xl border border-border bg-card/70 shadow-2xl shadow-primary/10 backdrop-blur animate-in fade-in slide-in-from-bottom-6 duration-1000">
         <div className="flex items-center justify-between border-b border-border px-4 py-2 font-mono text-xs text-muted-foreground">
           <span>alerts.live — simulated</span>
-          <span className="flex gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-red-400/70" /><i className="h-2.5 w-2.5 rounded-full bg-amber-300/70" /><i className="h-2.5 w-2.5 rounded-full bg-primary/70" /></span>
+          <span className="flex gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-danger/70" /><i className="h-2.5 w-2.5 rounded-full bg-warn/70" /><i className="h-2.5 w-2.5 rounded-full bg-primary/70" /></span>
         </div>
         <ul className="space-y-1 p-3 font-mono text-[11px] leading-5 md:text-xs">
           {feed.map((a) => (
@@ -138,6 +168,7 @@ function Hero() {
         </ul>
       </div>
     </section>
+    </div>
   )
 }
 
@@ -168,17 +199,17 @@ function Stats() {
   return (
     <section className="relative border-y border-border bg-card/40">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 md:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label}>
+        {stats.map((s, i) => (
+          <Reveal key={s.label} delay={i * 90}>
             <div className="font-mono text-4xl font-bold text-primary"><Counter to={s.value} suffix={s.suffix} /></div>
             <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
-          </div>
+          </Reveal>
         ))}
       </div>
-      <div className="overflow-hidden border-t border-border py-3">
+      <div className="marquee overflow-hidden border-t border-border py-3 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
         <div className="flex w-max animate-[marquee_40s_linear_infinite] gap-8 font-mono text-xs text-muted-foreground">
           {[...logSources, ...logSources].map((l, i) => (
-            <span key={i} className="whitespace-nowrap">◆ {l}</span>
+            <span key={i} className="whitespace-nowrap transition-colors hover:text-primary">◆ {l}</span>
           ))}
         </div>
       </div>
@@ -189,9 +220,14 @@ function Stats() {
 function SectionHead({ id, kicker, title, sub }: { id: string; kicker: string; title: string; sub?: string }) {
   return (
     <div id={id} className="scroll-mt-20">
-      <p className="font-mono text-xs uppercase tracking-widest text-primary">{kicker}</p>
-      <h2 className="mt-2 text-3xl font-bold md:text-4xl">{title}</h2>
-      {sub && <p className="mt-3 max-w-2xl text-muted-foreground">{sub}</p>}
+      <Reveal>
+        <p className="flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-primary">
+          {kicker}
+          <span className="h-px w-12 bg-gradient-to-r from-primary to-transparent" />
+        </p>
+        <h2 className="mt-2 text-3xl font-bold md:text-4xl">{title}</h2>
+        {sub && <p className="mt-3 max-w-2xl text-muted-foreground">{sub}</p>}
+      </Reveal>
     </div>
   )
 }
@@ -201,11 +237,12 @@ function Work({ onOpen }: { onOpen: (p: Project) => void }) {
     <section className="relative mx-auto max-w-6xl px-4 py-24">
       <SectionHead id="work" kicker="01 · selected work" title="Case studies" sub="Customer names withheld. Numbers are real." />
       <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((p) => (
+        {projects.map((p, i) => (
+          <Reveal key={p.id} delay={(i % 3) * 110} className="flex">
           <button
-            key={p.id}
             onClick={() => onOpen(p)}
-            className="group flex flex-col rounded-xl border border-border bg-card/70 p-6 text-left transition hover:-translate-y-1 hover:border-primary/60"
+            onPointerMove={spotlight}
+            className="spotlight group flex w-full flex-col rounded-xl border border-border bg-card/70 p-6 text-left transition duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10"
           >
             <span className="font-mono text-xs text-muted-foreground">{p.tag}</span>
             <h3 className="mt-2 text-lg font-semibold group-hover:text-primary">{p.title}</h3>
@@ -215,9 +252,10 @@ function Work({ onOpen }: { onOpen: (p: Project) => void }) {
               <div className="text-xs text-muted-foreground">{p.metric.label}</div>
             </div>
             <span className="mt-4 inline-flex items-center gap-1 font-mono text-xs text-primary opacity-0 transition group-hover:opacity-100">
-              read more <ArrowRight className="h-3 w-3" />
+              read more <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
             </span>
           </button>
+          </Reveal>
         ))}
       </div>
     </section>
@@ -281,17 +319,24 @@ function Agent() {
         />
         <div className="mt-12 grid gap-4 md:grid-cols-5">
           {agentSteps.map((s, i) => (
+            <Reveal key={s.title} delay={i * 100} className="flex">
             <button
-              key={s.title}
               onClick={() => setActive(i)}
-              className={`relative rounded-xl border p-5 text-left transition ${i === active ? "border-primary bg-primary/10" : "border-border bg-card/60"}`}
+              className={`relative w-full overflow-hidden rounded-xl border p-5 text-left transition duration-500 ${i === active ? "-translate-y-1 border-primary bg-primary/10 shadow-lg shadow-primary/10" : i < active ? "border-primary/30 bg-card/60" : "border-border bg-card/60"}`}
             >
-              <s.icon className={`h-6 w-6 ${i === active ? "text-primary" : "text-muted-foreground"}`} />
+              {i === active && (
+                <span
+                  key={active}
+                  className="absolute left-0 top-0 h-0.5 w-full origin-left bg-primary"
+                  style={{ animation: "fill 2.2s linear forwards" }}
+                />
+              )}
+              <s.icon className={`h-6 w-6 transition-transform duration-500 ${i === active ? "scale-110 text-primary" : "text-muted-foreground"}`} />
               <div className="mt-3 font-mono text-xs text-muted-foreground">step {i + 1}</div>
               <div className="font-semibold">{s.title}</div>
               <p className="mt-2 text-xs text-muted-foreground">{s.body}</p>
-              {i < agentSteps.length - 1 && <ArrowRight className="absolute -right-3.5 top-1/2 hidden h-4 w-4 text-border md:block" />}
             </button>
+            </Reveal>
           ))}
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -324,12 +369,12 @@ function Detection() {
         <div className="h-72 rounded-xl border border-border bg-card/60 p-4">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={noiseSeries}>
-              <CartesianGrid stroke="oklch(0.25 0.01 240)" strokeDasharray="3 3" />
-              <XAxis dataKey="hour" stroke="oklch(0.6 0.01 240)" fontSize={12} tickFormatter={(h) => `${h}:00`} />
-              <YAxis stroke="oklch(0.6 0.01 240)" fontSize={12} />
-              <Tooltip contentStyle={{ background: "oklch(0.15 0.01 240)", border: "1px solid oklch(0.25 0.01 240)", fontSize: 12 }} />
-              <Area type="monotone" dataKey="before" name="before (alerts/h)" stroke="oklch(0.6 0.2 25)" fill="oklch(0.6 0.2 25 / .2)" />
-              <Area type="monotone" dataKey="after" name="after (alerts/h)" stroke="oklch(0.7 0.15 195)" fill="oklch(0.7 0.15 195 / .3)" />
+              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+              <XAxis dataKey="hour" stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(h) => `${h}:00`} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: 12 }} />
+              <Area type="monotone" dataKey="before" name="before (alerts/h)" stroke="var(--danger)" fill="var(--danger)" fillOpacity={0.15} />
+              <Area type="monotone" dataKey="after" name="after (alerts/h)" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.25} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -376,8 +421,9 @@ function Journey() {
         <SectionHead id="journey" kicker="05 · journey" title="Four years, five phases" />
         <ol className="mt-10 border-l border-border">
           {timeline.map((t, i) => (
-            <li key={t.period} className="relative pb-6 pl-8">
-              <span className={`absolute -left-[7px] top-1.5 h-3.5 w-3.5 rounded-full border-2 ${i === open ? "border-primary bg-primary" : "border-border bg-background"}`} />
+            <Reveal as="li" key={t.period} delay={i * 80} className="relative pb-6 pl-8">
+              <span className={`absolute -left-[7px] top-1.5 h-3.5 w-3.5 rounded-full border-2 transition-colors duration-300 ${i === open ? "border-primary bg-primary" : "border-border bg-background"}`} />
+              {i === open && <span className="absolute -left-[7px] top-1.5 h-3.5 w-3.5 animate-ping rounded-full bg-primary/40" />}
               <button onClick={() => setOpen(i === open ? -1 : i)} className="flex w-full items-center justify-between text-left">
                 <div>
                   <div className="font-mono text-xs text-primary">{t.period}</div>
@@ -387,10 +433,14 @@ function Journey() {
               </button>
               {i === open && (
                 <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {t.points.map((p) => <li key={p}>→ {p}</li>)}
+                  {t.points.map((p, j) => (
+                    <li key={p} className="animate-in fade-in slide-in-from-left-2 fill-mode-both" style={{ animationDelay: `${j * 80}ms` }}>
+                      → {p}
+                    </li>
+                  ))}
                 </ul>
               )}
-            </li>
+            </Reveal>
           ))}
         </ol>
       </div>
@@ -503,7 +553,7 @@ function Contact() {
           <button disabled={state === "sending"} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
             <Mail className="h-4 w-4" /> {state === "sending" ? "Sending…" : "Send message"}
           </button>
-          {state === "error" && <p className="text-sm text-red-400">Couldn't send right now. Please try again later.</p>}
+          {state === "error" && <p className="text-sm text-danger">Couldn't send right now. Please try again later.</p>}
         </form>
       )}
     </section>
