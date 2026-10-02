@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
-import { AlertTriangle, Check, CircleX, Copy, Info } from "lucide-react"
+import { AlertTriangle, Check, CircleX, Copy, Info, Link2 } from "lucide-react"
 import { attackOf, parseSigma, type Severity } from "@/lib/rulebridge/sigma"
 import { targets, worst, type FieldStatus } from "@/lib/rulebridge/targets"
 import { samples } from "@/lib/rulebridge/samples"
@@ -80,6 +80,27 @@ export function RuleTranslator() {
   // Bumped on tab switch or sample load: replays the translate animation.
   // Typing in the editor doesn't, so output keeps up with every keystroke.
   const [run, setRun] = useState(0)
+  const [shared, setShared] = useState(false)
+
+  // Share links carry the rule in the URL fragment, which never reaches a server.
+  useEffect(() => {
+    const m = location.hash.match(/rule=([^&]+)/)
+    if (!m) return
+    try {
+      const b = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"))
+      setYaml(new TextDecoder().decode(Uint8Array.from(b, (c) => c.charCodeAt(0))))
+      setRun((r) => r + 1)
+    } catch {}
+  }, [])
+  const share = async () => {
+    const bytes = new TextEncoder().encode(yaml)
+    const b64 = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+    const url = `${location.origin}/lab?tool=translator#rule=${b64}`
+    history.replaceState(null, "", url)
+    await navigator.clipboard.writeText(url).catch(() => {})
+    setShared(true)
+    setTimeout(() => setShared(false), 1500)
+  }
 
   const parsed = useMemo(() => parseSigma(yaml), [yaml])
   const outputs = useMemo(
@@ -122,6 +143,9 @@ export function RuleTranslator() {
           >
             {samples.map((s, i) => <option key={s.name} value={i}>sample: {s.name}</option>)}
           </select>
+          <button onClick={share} className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 font-mono text-xs hover:border-primary">
+            {shared ? <Check className="h-3 w-3" /> : <Link2 className="h-3 w-3" />} {shared ? "link copied" : "share"}
+          </button>
         </div>
         <textarea
           value={yaml}

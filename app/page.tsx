@@ -5,7 +5,8 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, LabelList, Legend,
 import { ArrowRight, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, ShieldCheck, Terminal, X } from "lucide-react"
 import { logSources, noiseSeries, tuningCases, tuningPatterns, type TuningCase, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
 import { sendContactEmail } from "@/app/actions/contact"
-import { RuleTranslator } from "@/components/rule-lab"
+import Link from "next/link"
+import { labTools } from "@/lib/lab/tools"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   EASE, MaskText, Reveal, ScrollProgressBar, ScrollScale, ScrollText, motion, spotlight,
@@ -779,11 +780,37 @@ function Lab() {
         <SectionHead
           id="lab"
           kicker="04 · lab"
-          title="Rule translator"
-          sub="Paste a Sigma rule and get Splunk, Elastic, Sentinel, LogScale and Wazuh queries, plus an honest list of what each translation lost. Runs entirely in your browser; nothing is sent anywhere."
+          title="Tools that run in your browser"
+          sub="Small detection-engineering tools I built. Nothing is uploaded; each one says what it can't do."
         />
-        <div className="mt-8">
-          <RuleTranslator />
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {labTools.map((t, i) => (
+            <Reveal key={t.id} delay={i * 60} className="flex">
+              <Link
+                href={`/lab?tool=${t.id}`}
+                onPointerMove={tilt}
+                onPointerLeave={untilt}
+                style={{ transform: "perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))" }}
+                className="spotlight group flex w-full flex-col rounded-xl border border-border bg-card/70 p-5 transition duration-300 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10"
+              >
+                <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
+                <h3 className="mt-2 font-semibold group-hover:text-primary">{t.name}</h3>
+                <p className="mt-2 flex-1 text-sm text-muted-foreground">{t.short}</p>
+                <span className="mt-5 inline-flex items-center gap-1 font-mono text-xs text-primary">
+                  open in lab <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+            </Reveal>
+          ))}
+          <Reveal delay={labTools.length * 60} className="flex">
+            <Link
+              href="/lab"
+              className="group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-primary/50 p-5 text-center font-mono text-sm text-primary transition hover:bg-primary/10"
+            >
+              open the lab
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </Reveal>
         </div>
       </div>
     </section>
