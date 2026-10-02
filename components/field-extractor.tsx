@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { extract, samples } from "@/lib/lab/extract"
 import { Caveat, CopyButton, Panel, SampleSelect, area } from "@/components/lab-ui"
 
@@ -16,7 +17,7 @@ export function FieldExtractor() {
       <Panel title="raw log line" actions={<SampleSelect items={samples} onPick={(s) => setLine(s.line)} />}>
         <textarea value={line} onChange={(e) => setLine(e.target.value)} spellCheck={false} aria-label="Raw log" className={`${area} min-h-24`} />
       </Panel>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Panel
           title={
             <span>

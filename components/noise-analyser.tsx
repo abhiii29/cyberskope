@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useRef, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Check, Copy, Info, Upload } from "lucide-react"
 import { detectFields, evidence, fmtPeriod, groupAlerts, hourly, parseAlerts, sampleAlerts, suggest } from "@/lib/lab/noise"
@@ -88,7 +89,7 @@ export function NoiseAnalyser() {
       {!error && alerts.length > 0 && (
         <>
           {/* Summary */}
-          <div className="grid gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {[
               [alerts.length.toLocaleString(), "alerts analysed"],
               [groups.length.toLocaleString(), "distinct groups"],
@@ -108,7 +109,7 @@ export function NoiseAnalyser() {
             ))}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
             {/* Noise makers */}
             <div className="rounded-xl border border-border bg-card/60 p-3">
               <div className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">top noise makers</div>

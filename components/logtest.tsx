@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { logtest, sample } from "@/lib/lab/wazuh"
 import { Caveat, Panel, area, chip } from "@/components/lab-ui"
 
@@ -26,7 +27,7 @@ export function Logtest() {
         </Panel>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Panel title="phases">
           <ol className="space-y-1.5 p-3">
             {r.trace.map((s, i) => (

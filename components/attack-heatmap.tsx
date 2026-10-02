@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { ExternalLink, Info } from "lucide-react"
 import { coverage, matrix, readRules, samplePack, uniqueTechniques } from "@/lib/lab/attack"
 
@@ -25,7 +26,7 @@ export function AttackHeatmap() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="flex min-w-0 flex-col rounded-xl border border-border bg-card/60">
           <div className="flex items-center gap-2 border-b border-border p-3">
             <span className="font-mono text-xs text-muted-foreground">rules.yml · separate rules with ---</span>

@@ -118,19 +118,19 @@ export function AgentSim({ steps, onClose, initialScenario }: { steps: Step[]; o
     >
       {/* Top bar */}
       <div className="relative flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-        <span className="font-mono text-sm font-semibold">daily-review · simulated run</span>
+        <span className="pr-10 font-mono text-sm font-semibold sm:pr-0">daily-review · simulated run</span>
         <span className="rounded-full border border-warn/40 bg-warn/10 px-2 py-0.5 font-mono text-[10px] text-warn">synthetic tenants and data</span>
         {clock && (
           <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
             <Clock className="h-3 w-3" /> {clock} UTC
           </span>
         )}
-        <div className="ml-auto flex flex-wrap items-center gap-1">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-1 sm:ml-auto sm:w-auto">
           <select
             value={scenarioId}
             onChange={(e) => reset(e.target.value)}
             aria-label="Scenario"
-            className="h-8 rounded border border-border bg-card px-2 font-mono text-xs outline-none focus:border-primary"
+            className="h-8 w-full min-w-0 max-w-full rounded border border-border bg-card px-2 font-mono text-xs outline-none focus:border-primary sm:w-auto sm:max-w-xs"
           >
             {scenarios.map((x) => (
               <option key={x.id} value={x.id}>
@@ -163,7 +163,7 @@ export function AgentSim({ steps, onClose, initialScenario }: { steps: Step[]; o
               {s}×
             </button>
           ))}
-          <button onClick={onClose} className="ml-2 inline-flex h-8 w-8 items-center justify-center rounded border border-border hover:border-danger" aria-label="Close">
+          <button onClick={onClose} className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded border border-border bg-background hover:border-danger sm:static sm:ml-2" aria-label="Close">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -172,9 +172,9 @@ export function AgentSim({ steps, onClose, initialScenario }: { steps: Step[]; o
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4 lg:grid-cols-[200px_1fr_1fr] lg:overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:grid lg:grid-cols-[200px_minmax(0,1fr)_minmax(0,1fr)] lg:overflow-hidden">
         {/* Stage rail */}
-        <ol className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+        <ol className="flex shrink-0 gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
           {steps.map((s, i) => {
             const state = i < stage || (i === stage && done) ? "done" : i === stage ? "active" : "todo"
             return (
@@ -207,7 +207,7 @@ export function AgentSim({ steps, onClose, initialScenario }: { steps: Step[]; o
         </ol>
 
         {/* Console */}
-        <div ref={consoleRef} className="min-h-64 overflow-y-auto rounded-xl border border-border bg-card/70 p-4 font-mono text-xs leading-6 lg:min-h-0">
+        <div ref={consoleRef} className="max-h-[50vh] min-h-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card/70 p-4 lg:max-h-none lg:shrink font-mono text-xs leading-6 lg:min-h-0">
           {script.slice(0, shown).map((e, i) => (
             <motion.div
               key={i}
@@ -229,7 +229,7 @@ export function AgentSim({ steps, onClose, initialScenario }: { steps: Step[]; o
         </div>
 
         {/* Artefacts */}
-        <div className="min-h-64 overflow-y-auto rounded-xl border border-border bg-card/40 p-4 lg:min-h-0">
+        <div className="min-h-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card/40 p-4 lg:shrink lg:min-h-0">
           <div className="mb-3 flex items-center gap-3 font-mono text-[10px] uppercase tracking-wider">
             <button onClick={() => setPanel("output")} className={panel === "output" ? "text-primary" : "text-muted-foreground"}>
               output · {steps[viewStage].title}

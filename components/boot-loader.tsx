@@ -5,7 +5,8 @@
 // The page underneath is already rendered, so nothing waits on it for SEO.
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { ShieldCheck } from "lucide-react"
 
 const LINES = [

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { AlertTriangle, Check, CircleX, Copy, Info, Link2 } from "lucide-react"
 import { attackOf, parseSigma, type Severity } from "@/lib/rulebridge/sigma"
 import { targets, worst, type FieldStatus } from "@/lib/rulebridge/targets"

@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { Eye, Lightbulb, Trophy } from "lucide-react"
 import { events, levels, score } from "@/lib/lab/challenge"
 import { Caveat, Panel, area, chip } from "@/components/lab-ui"
@@ -60,7 +61,7 @@ export function HuntChallenge() {
 
       <p className="text-sm text-muted-foreground">{level.brief}</p>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <Panel
           title="your sigma rule"
           actions={

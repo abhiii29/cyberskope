@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { compile, type Dialect } from "@/lib/lab/osregex"
 import { Caveat, Panel, SampleSelect, area } from "@/components/lab-ui"
 
@@ -72,7 +73,7 @@ export function RegexTester() {
         <textarea value={lines} onChange={(e) => setLines(e.target.value)} spellCheck={false} aria-label="Sample lines" className={`${area} min-h-24`} />
       </Panel>
 
-      <div className="grid gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
         {results.map(({ d, c, hits }, di) => {
           const n = hits.filter(Boolean).length
           return (
