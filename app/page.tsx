@@ -9,9 +9,9 @@ import { RuleTranslator } from "@/components/rule-lab"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   EASE, MaskText, Reveal, ScrollProgressBar, ScrollScale, ScrollText, motion, spotlight,
-  useActiveSection, useReducedMotion, useScroll, useScrollStep, useTransform,
+  useActiveSection, useReducedMotion, useScroll, useScrollStep, useSpring, useTransform,
 } from "@/components/motion"
-import { AnimatePresence } from "motion/react"
+import { AnimatePresence, useMotionValueEvent } from "motion/react"
 import { BootProvider, useBooted } from "@/components/boot-loader"
 import { NetworkField } from "@/components/network-field"
 
@@ -230,23 +230,93 @@ function Counter({ to, suffix }: { to: number; suffix: string }) {
   return <span ref={ref}>{n}{suffix}</span>
 }
 
+// A tiny animation per stat that shows what the number means. Plays once in view.
+function StatGlyph({ i }: { i: number }) {
+  const reduce = useReducedMotion()
+  const v = { once: true, margin: "0px 0px -10% 0px" }
+  const t = (d: number) => ({ duration: 0.4, ease: EASE, delay: reduce ? 0 : 0.3 + d })
+  const box = "mb-3 flex h-6 items-end gap-1"
+  if (i === 0) // years: one segment fills per year
+    return (
+      <div className={box} aria-hidden>
+        {[0, 1, 2, 3].map((k) => (
+          <div key={k} className="h-1.5 w-8 overflow-hidden rounded-full bg-border">
+            <motion.div className="h-full origin-left bg-primary" initial={{ scaleX: reduce ? 1 : 0 }} whileInView={{ scaleX: 1 }} viewport={v} transition={{ ...t(k * 0.3), duration: 0.35 }} />
+          </div>
+        ))}
+      </div>
+    )
+  if (i === 1) // repositories: each pipeline turns green
+    return (
+      <div className={box} aria-hidden>
+        {Array.from({ length: 7 }, (_, k) => (
+          <motion.div
+            key={k}
+            className="flex h-4 w-4 items-center justify-center rounded-sm border text-[9px] leading-none"
+            initial={reduce ? false : { borderColor: "var(--border)", color: "transparent", backgroundColor: "transparent" }}
+            whileInView={{ borderColor: "var(--primary)", color: "var(--primary-foreground)", backgroundColor: "var(--primary)" }}
+            viewport={v}
+            transition={t(k * 0.12)}
+          >
+            ✓
+          </motion.div>
+        ))}
+      </div>
+    )
+  if (i === 2) // upgrade rounds: a staircase of versions
+    return (
+      <div className={box} aria-hidden>
+        {Array.from({ length: 8 }, (_, k) => (
+          <motion.div
+            key={k}
+            className="w-2.5 origin-bottom rounded-t-sm bg-primary"
+            style={{ height: `${(k + 1) * 3}px` }}
+            initial={reduce ? false : { scaleY: 0, opacity: 0 }}
+            whileInView={{ scaleY: 1, opacity: 1 }}
+            viewport={v}
+            transition={t(k * 0.1)}
+          />
+        ))}
+      </div>
+    )
+  // log sources: streams converging into one pipe
+  return (
+    <div className="relative mb-3 h-6 w-32 overflow-hidden" aria-hidden>
+      <div className="absolute right-0 top-1/2 h-3 w-8 -translate-y-1/2 rounded-sm border border-primary bg-primary/20" />
+      {!reduce &&
+        [0, 1, 2, 3, 4].map((k) => (
+          <motion.span
+            key={k}
+            className="absolute h-1.5 w-1.5 rounded-full bg-primary"
+            initial={{ left: "0%", top: `${10 + k * 18}%`, opacity: 0 }}
+            animate={{ left: ["0%", "72%"], top: [`${10 + k * 18}%`, "45%"], opacity: [0, 1, 0] }}
+            transition={{ duration: 1.6, repeat: Infinity, delay: k * 0.32, ease: "easeIn" }}
+          />
+        ))}
+    </div>
+  )
+}
+
 function Stats() {
   return (
     <section className="relative border-y border-border bg-card/40">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 md:grid-cols-4">
         {stats.map((s, i) => (
           <Reveal key={s.label} delay={i * 90}>
+            <StatGlyph i={i} />
             <div className="font-mono text-4xl font-bold text-primary"><Counter to={s.value} suffix={s.suffix} /></div>
             <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
           </Reveal>
         ))}
       </div>
-      <div className="marquee overflow-hidden border-t border-border py-3 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+      <div className="marquee relative overflow-hidden border-t border-border py-3 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
         <div className="flex w-max animate-[marquee_40s_linear_infinite] gap-8 font-mono text-xs text-muted-foreground">
           {[...logSources, ...logSources].map((l, i) => (
             <span key={i} className="whitespace-nowrap transition-colors hover:text-primary">◆ {l}</span>
           ))}
         </div>
+        {/* A scanner beam sweeping across the sources, like a parser picking them up. */}
+        <span aria-hidden className="scan-beam pointer-events-none absolute inset-y-0 w-40" />
       </div>
     </section>
   )
@@ -267,6 +337,21 @@ function SectionHead({ id, kicker, title, sub }: { id: string; kicker: string; t
   )
 }
 
+// 3D tilt toward the pointer on top of the spotlight; skipped for reduced motion.
+function tilt(e: React.PointerEvent<HTMLElement>) {
+  spotlight(e)
+  if (e.pointerType !== "mouse" || matchMedia("(prefers-reduced-motion: reduce)").matches) return
+  const r = e.currentTarget.getBoundingClientRect()
+  const px = (e.clientX - r.left) / r.width - 0.5
+  const py = (e.clientY - r.top) / r.height - 0.5
+  e.currentTarget.style.setProperty("--rx", `${(-py * 6).toFixed(2)}deg`)
+  e.currentTarget.style.setProperty("--ry", `${(px * 8).toFixed(2)}deg`)
+}
+function untilt(e: React.PointerEvent<HTMLElement>) {
+  e.currentTarget.style.setProperty("--rx", "0deg")
+  e.currentTarget.style.setProperty("--ry", "0deg")
+}
+
 function Work({ onOpen }: { onOpen: (p: Project) => void }) {
   return (
     <section className="relative mx-auto max-w-6xl px-4 py-24">
@@ -276,7 +361,9 @@ function Work({ onOpen }: { onOpen: (p: Project) => void }) {
           <ScrollScale key={p.id} className="flex">
           <button
             onClick={() => onOpen(p)}
-            onPointerMove={spotlight}
+            onPointerMove={tilt}
+            onPointerLeave={untilt}
+            style={{ transform: "perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))" }}
             className="spotlight group flex w-full flex-col rounded-xl border border-border bg-card/70 p-6 text-left transition duration-300 hover:-translate-y-1 hover:border-primary/60 hover:shadow-xl hover:shadow-primary/10"
           >
             <span className="font-mono text-xs text-muted-foreground">{p.tag}</span>
@@ -336,6 +423,46 @@ const agentSteps = [
   { icon: Lock, title: "Validate", body: "Any number or IP not traceable to a tool result is removed. Unreachable = NOT CHECKED." },
   { icon: GitBranch, title: "Publish", body: "One report page per day, one ticket per High/Critical finding." },
 ]
+
+// The pipeline as a strip of nodes: stages up to the current step light up and
+// packets keep travelling from the first node to the active one.
+function AgentFlow({ active }: { active: number }) {
+  const reduce = useReducedMotion()
+  const n = agentSteps.length
+  const x = (i: number) => `${(i / (n - 1)) * 100}%`
+  return (
+    <div className="relative mt-10 h-10" aria-hidden>
+      <div className="absolute inset-x-4 top-1/2 h-px -translate-y-1/2 bg-border">
+        <motion.div className="h-full origin-left bg-gradient-to-r from-primary to-violet" animate={{ scaleX: active / (n - 1) }} transition={{ duration: 0.6, ease: EASE }} />
+        {!reduce && active > 0 &&
+          [0, 1].map((k) => (
+            <motion.span
+              key={`${active}-${k}`}
+              className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_10px_var(--primary)]"
+              initial={{ left: "0%", opacity: 0 }}
+              animate={{ left: ["0%", x(active)], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 0.5 + active * 0.35, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.4, delay: k * 0.6 }}
+            />
+          ))}
+        {agentSteps.map((st, i) => (
+          <motion.span
+            key={st.title}
+            className="absolute top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border bg-card"
+            style={{ left: x(i) }}
+            animate={{
+              borderColor: i <= active ? "var(--primary)" : "var(--border)",
+              color: i <= active ? "var(--primary)" : "var(--muted-foreground)",
+              scale: i === active ? 1.15 : 1,
+            }}
+            transition={{ duration: 0.4 }}
+          >
+            <st.icon className="h-3.5 w-3.5" />
+          </motion.span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function Agent() {
   const [active, setActive] = useState(0)
@@ -403,6 +530,7 @@ function Agent() {
               <h3 className="mt-1 text-3xl font-bold">{S.title}</h3>
               <p className="mt-4 max-w-md text-lg text-muted-foreground">{S.body}</p>
             </motion.div>
+            <AgentFlow active={active} />
           </div>
         </div>
       </div>
@@ -664,14 +792,26 @@ function Lab() {
 
 function Journey() {
   const [open, setOpen] = useState(timeline.length - 1)
+  const reduce = useReducedMotion()
+  const line = useRef<HTMLOListElement>(null)
+  const { scrollYProgress } = useScroll({ target: line, offset: ["start 75%", "end 55%"] })
+  const draw = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 })
+  const [reached, setReached] = useState(reduce ? timeline.length : 0)
+  useMotionValueEvent(scrollYProgress, "change", (p) => setReached(Math.ceil(p * timeline.length + 0.01)))
   return (
     <section className="relative border-y border-border bg-card/30">
       <div className="mx-auto max-w-4xl px-4 py-24">
         <SectionHead id="journey" kicker="05 · journey" title="Four years, five phases" />
-        <ol className="mt-10 border-l border-border">
+        <ol ref={line} className="relative mt-10">
+          <span aria-hidden className="absolute left-0 top-0 h-full w-px bg-border" />
+          <motion.span
+            aria-hidden
+            style={reduce ? undefined : { scaleY: draw }}
+            className="absolute left-0 top-0 h-full w-px origin-top bg-gradient-to-b from-primary via-primary to-violet shadow-[0_0_8px_var(--primary)]"
+          />
           {timeline.map((t, i) => (
             <Reveal as="li" key={t.period} delay={i * 80} className="relative pb-6 pl-8">
-              <span className={`absolute -left-[7px] top-1.5 h-3.5 w-3.5 rounded-full border-2 transition-colors duration-300 ${i === open ? "border-primary bg-primary" : "border-border bg-background"}`} />
+              <span className={`absolute -left-[7px] top-1.5 h-3.5 w-3.5 rounded-full border-2 transition-colors duration-300 ${i === open ? "border-primary bg-primary" : i < reached || reduce ? "border-primary bg-background" : "border-border bg-background"} ${i < reached && !reduce ? "scale-110" : ""}`} />
               {i === open && <span className="absolute -left-[7px] top-1.5 h-3.5 w-3.5 animate-ping rounded-full bg-primary/40" />}
               <button onClick={() => setOpen(i === open ? -1 : i)} className="flex w-full items-center justify-between text-left">
                 <div>
@@ -698,6 +838,7 @@ function Journey() {
 }
 
 function Skills() {
+  const reduce = useReducedMotion()
   const cats = Object.keys(skills)
   const [cat, setCat] = useState(cats[0])
   return (
@@ -714,11 +855,28 @@ function Skills() {
           </button>
         ))}
       </div>
-      <div className="mt-6 flex flex-wrap gap-3">
-        {skills[cat].map((s) => (
-          <span key={s} className="animate-in fade-in zoom-in-95 rounded-lg border border-border bg-card/70 px-4 py-2 text-sm">{s}</span>
-        ))}
-      </div>
+      <motion.div layout className="mt-6 flex min-h-24 flex-wrap content-start gap-3">
+        <AnimatePresence mode="popLayout">
+          {skills[cat].map((s, i) => {
+            // Deterministic scatter per chip so each one flies in from its own spot.
+            const h = [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 997, 7)
+            return (
+              <motion.span
+                key={cat + s}
+                layout
+                initial={reduce ? false : { opacity: 0, x: (h % 120) - 60, y: ((h * 7) % 80) - 40, rotate: (h % 24) - 12, scale: 0.6 }}
+                animate={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.15 } }}
+                transition={{ type: "spring", stiffness: 260, damping: 22, delay: i * 0.04 }}
+                whileHover={{ y: -3, borderColor: "var(--primary)" }}
+                className="rounded-lg border border-border bg-card/70 px-4 py-2 text-sm"
+              >
+                {s}
+              </motion.span>
+            )
+          })}
+        </AnimatePresence>
+      </motion.div>
     </section>
   )
 }
@@ -791,7 +949,18 @@ function Contact() {
     <section className="relative mx-auto max-w-3xl px-4 py-24">
       <SectionHead id="contact" kicker="08 · contact" title="Let's talk" sub="Roles in detection engineering, SIEM platform work or security automation." />
       {state === "sent" ? (
-        <p className="mt-8 rounded-lg border border-primary/40 bg-primary/10 p-4 font-mono text-sm">✓ message delivered. I'll reply soon.</p>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          className="mt-8 flex items-center gap-4 rounded-lg border border-primary/40 bg-primary/10 p-4 font-mono text-sm"
+        >
+          <svg viewBox="0 0 24 24" className="h-8 w-8 shrink-0 text-primary" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <motion.circle cx="12" cy="12" r="10" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.5 }} />
+            <motion.path d="M7 12.5l3.2 3.2L17 9" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.35, delay: 0.45 }} />
+          </svg>
+          message delivered. I&apos;ll reply soon.
+        </motion.div>
       ) : (
         <form onSubmit={submit} className="mt-8 grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -799,8 +968,27 @@ function Contact() {
             <input required maxLength={254} type="email" name="email" placeholder="Email" className="rounded-md border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary" />
           </div>
           <textarea required maxLength={5000} name="message" rows={5} placeholder="Message" className="rounded-md border border-border bg-card px-4 py-2.5 text-sm outline-none focus:border-primary" />
-          <button disabled={state === "sending"} className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-60">
-            <Mail className="h-4 w-4" /> {state === "sending" ? "Sending…" : "Send message"}
+          <button disabled={state === "sending"} className="relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground disabled:cursor-wait">
+            {state === "sending" ? (
+              <>
+                {/* Envelope flies across leaving a trail while the request is in flight. */}
+                <motion.span
+                  className="absolute top-1/2 -translate-y-1/2"
+                  initial={{ left: "-10%" }}
+                  animate={{ left: "105%" }}
+                  transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <span className="absolute right-full top-1/2 h-px w-16 -translate-y-1/2 bg-gradient-to-r from-transparent to-primary-foreground/70" />
+                  <Mail className="h-4 w-4" />
+                </motion.span>
+                <span className="opacity-0">Send message</span>
+                <span className="sr-only">Sending…</span>
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4" /> Send message
+              </>
+            )}
           </button>
           {state === "error" && <p className="text-sm text-danger">Couldn't send right now. Please try again later.</p>}
         </form>

@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { AlertTriangle, Check, CircleX, Copy, Info } from "lucide-react"
 import { attackOf, parseSigma, type Severity } from "@/lib/rulebridge/sigma"
 import { targets, worst, type FieldStatus } from "@/lib/rulebridge/targets"
@@ -17,11 +18,68 @@ const fieldCls: Record<FieldStatus, string> = {
   mapped: "text-primary", identity: "text-muted-foreground", derived: "text-warn", unmapped: "text-danger",
 }
 
+/** Types the query out after a tab switch or sample load; shows edits instantly. */
+function Typed({ text, run }: { text: string; run: number }) {
+  const reduce = useReducedMotion()
+  const [n, setN] = useState(Infinity)
+  useEffect(() => {
+    if (reduce || run === 0) return
+    setN(0)
+    let raf = 0
+    const start = performance.now()
+    const dur = Math.min(900, 250 + text.length * 2)
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / dur)
+      setN(p < 1 ? Math.floor(text.length * p) : Infinity)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run, reduce])
+  if (n >= text.length) return <>{text}</>
+  return (
+    <>
+      {text.slice(0, n)}
+      <span className="animate-pulse text-primary">▍</span>
+    </>
+  )
+}
+
+/** "parse → map fields → render" chips that tick through on each run. */
+function Pipeline({ run, target }: { run: number; target: string }) {
+  const reduce = useReducedMotion()
+  const stages = ["parse sigma", "map fields", `render ${target}`]
+  return (
+    <div className="flex items-center gap-1.5 border-b border-border/60 px-4 py-2 font-mono text-[10px] text-muted-foreground">
+      <AnimatePresence mode="popLayout">
+        {stages.map((st, i) => (
+          <motion.span key={`${run}-${st}`} className="flex items-center gap-1.5" initial={reduce ? false : { opacity: 0.3 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.18 }}>
+            {i > 0 && <span className="opacity-50">→</span>}
+            <motion.span
+              className="rounded border px-1.5 py-0.5"
+              initial={reduce ? false : { borderColor: "var(--border)", color: "var(--muted-foreground)" }}
+              animate={{ borderColor: "var(--primary)", color: "var(--primary)" }}
+              transition={{ delay: i * 0.18, duration: 0.25 }}
+            >
+              ✓ {st}
+            </motion.span>
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 export function RuleTranslator() {
+  const reduce = useReducedMotion()
   const [yaml, setYaml] = useState(samples[0].yaml)
   const [tid, setTid] = useState("wazuh")
   const [copied, setCopied] = useState(false)
   const [event, setEvent] = useState(samples[0].event)
+  // Bumped on tab switch or sample load: replays the translate animation.
+  // Typing in the editor doesn't, so output keeps up with every keystroke.
+  const [run, setRun] = useState(0)
 
   const parsed = useMemo(() => parseSigma(yaml), [yaml])
   const outputs = useMemo(
@@ -57,6 +115,7 @@ export function RuleTranslator() {
               const s = samples[Number(e.target.value)]
               setYaml(s.yaml)
               setEvent(s.event)
+              setRun((r) => r + 1)
             }}
             defaultValue="0"
             className="ml-auto rounded border border-border bg-background px-2 py-1 font-mono text-xs outline-none focus:border-primary"
@@ -99,7 +158,7 @@ export function RuleTranslator() {
             return (
               <button
                 key={t.id}
-                onClick={() => setTid(t.id)}
+                onClick={() => (setTid(t.id), setRun((r) => r + 1))}
                 className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-1.5 font-mono text-xs transition ${t.id === tid ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full ${dot[w]}`} /> {t.name}
@@ -108,8 +167,9 @@ export function RuleTranslator() {
           })}
         </div>
         <div className="relative border-b border-border">
+          {out && <Pipeline run={run} target={targets.find((t) => t.id === tid)!.name} />}
           <pre className="max-h-72 min-h-[140px] overflow-auto whitespace-pre-wrap break-all p-4 font-mono text-xs leading-5 text-foreground/90">
-            {out ? out.query : "// fix the rule to see output"}
+            {out ? <Typed text={out.query} run={run} /> : "// fix the rule to see output"}
           </pre>
           {out && (
             <button onClick={copy} className="absolute right-2 top-2 inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] hover:border-primary">
@@ -182,7 +242,7 @@ export function RuleTranslator() {
                 return (
                   <tr
                     key={t.id}
-                    onClick={() => setTid(t.id)}
+                    onClick={() => (setTid(t.id), setRun((r) => r + 1))}
                     className={`cursor-pointer border-t border-border/40 hover:bg-primary/5 ${t.id === tid ? "bg-primary/10" : ""}`}
                     title={top?.message}
                   >
@@ -232,10 +292,16 @@ export function RuleTranslator() {
                   </div>
                   <ul className="ml-4 mt-1 space-y-0.5">
                     {sel.leaves.map((l, i) => (
-                      <li key={i} className="break-all font-mono text-[11px] text-muted-foreground">
+                      <motion.li
+                        key={`${run}-${event.length}-${i}`}
+                        initial={reduce ? false : { opacity: 0, x: -8, backgroundColor: l.matched ? "rgba(45,212,191,0.18)" : "rgba(248,113,113,0.18)" }}
+                        animate={{ opacity: 1, x: 0, backgroundColor: "rgba(0,0,0,0)" }}
+                        transition={{ duration: 0.5, delay: i * 0.08 }}
+                        className="break-all rounded font-mono text-[11px] text-muted-foreground"
+                      >
                         <span className={l.matched ? "text-primary" : "text-danger/80"}>{l.matched ? "✓" : "✗"}</span> {l.field}{" "}
                         <span className="opacity-60">expects</span> {l.expected} <span className="opacity-60">got</span> {l.actual}
-                      </li>
+                      </motion.li>
                     ))}
                   </ul>
                 </div>
