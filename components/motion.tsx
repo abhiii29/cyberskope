@@ -5,15 +5,8 @@
 // everything degrades to static content under prefers-reduced-motion.
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import {
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-  type MotionValue,
-} from "motion/react"
+import { motion, useMotionValueEvent, useScroll, useSpring, useTransform, type MotionValue } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 
 const EASE = [0.16, 1, 0.3, 1] as const // expo-out, the curve Apple uses for reveals
 

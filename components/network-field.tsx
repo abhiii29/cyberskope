@@ -6,7 +6,7 @@
 // pointer. Pauses off-screen and renders a single still frame for reduced motion.
 
 import { useEffect, useRef } from "react"
-import { useReducedMotion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 
 type P = { x: number; y: number; vx: number; vy: number }
 type Packet = { a: number; b: number; t: number; alert: boolean }

@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
+import { useReducedMotion } from "@/components/use-reduced-motion"
 import { defang, extractIocs, inCidr, sampleReport, type IocType } from "@/lib/lab/ioc"
 import { Caveat, CopyButton, Panel, area, chip } from "@/components/lab-ui"
 
@@ -27,7 +28,7 @@ export function IocHelper() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Panel title="paste a report, ticket or chat" actions={<button className={chip} onClick={() => setText(sampleReport)}>sample</button>}>
           <textarea value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} aria-label="Text with indicators" className={`${area} min-h-48`} />
         </Panel>
@@ -55,7 +56,7 @@ export function IocHelper() {
         </label>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         <Panel title={`${rows.length} unique indicators`} actions={<CopyButton text={csv} label="copy CSV" />}>
           <ul className="divide-y divide-border/50">
             <AnimatePresence initial={false}>
