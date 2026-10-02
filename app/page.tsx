@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { ArrowRight, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, ShieldCheck, Terminal, X } from "lucide-react"
-import { logSources, noiseSeries, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
+import { logSources, noiseSeries, tuningCases, tuningPatterns, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
 import { sendContactEmail } from "@/app/actions/contact"
 import { RuleTranslator } from "@/components/rule-lab"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -11,6 +11,7 @@ import {
   EASE, MaskText, Reveal, ScrollProgressBar, ScrollScale, ScrollText, motion, spotlight,
   useActiveSection, useReducedMotion, useScroll, useScrollStep, useTransform,
 } from "@/components/motion"
+import { AnimatePresence } from "motion/react"
 import { BootProvider, useBooted } from "@/components/boot-loader"
 import { NetworkField } from "@/components/network-field"
 
@@ -424,40 +425,125 @@ function Agent() {
 }
 
 function Detection() {
+  const [group, setGroup] = useState<"own" | "patterns">("own")
+  const [active, setActive] = useState(0)
+  const list = group === "own" ? tuningCases : tuningPatterns
+  const c = list[Math.min(active, list.length - 1)]
   return (
     <section className="relative mx-auto max-w-6xl px-4 py-24">
       <SectionHead
         id="detection"
         kicker="03 · detection engineering"
         title="Tuning with evidence"
-        sub="A mount-syscall use case was flooding analysts. Root cause: a firmware updater. Removing it took the rule from ~194 to ~12 alerts per hour, and the RCA went to the customer."
+        sub="Noise has a root cause. Each case below started with an alert queue nobody trusted and ended with a measured, reviewed change."
       />
-      <div className="mt-10 grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="h-72 rounded-xl border border-border bg-card/60 p-4">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={noiseSeries}>
-              <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-              <XAxis dataKey="hour" stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(h) => `${h}:00`} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-              <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: 12 }} />
-              <Area type="monotone" dataKey="before" name="before (alerts/h)" stroke="var(--danger)" fill="var(--danger)" fillOpacity={0.15} />
-              <Area type="monotone" dataKey="after" name="after (alerts/h)" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.25} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="space-y-4">
-          {[
-            ["99.1%", "of a level-7 population cleared by a single reviewed suppression"],
-            ["73%", "of one rule's alerts traced to a minutely root cron job"],
-            ["96", "suppression values reviewed one by one"],
-          ].map(([v, l]) => (
-            <div key={v} className="rounded-lg border border-border bg-card/60 p-4">
-              <div className="font-mono text-2xl font-bold text-primary">{v}</div>
-              <div className="text-sm text-muted-foreground">{l}</div>
-            </div>
-          ))}
-        </div>
+      <div className="mt-8 inline-flex rounded-full border border-border p-1 font-mono text-xs">
+        {([["own", "From my work"], ["patterns", "Common patterns"]] as const).map(([g, label]) => (
+          <button
+            key={g}
+            onClick={() => (setGroup(g), setActive(0))}
+            className={`rounded-full px-3 py-1 transition-colors ${group === g ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+      {group === "patterns" && (
+        <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
+          Widely known tuning problems and how I'd approach them. These aren't from my engagements, so there are no measured numbers.
+        </p>
+      )}
+      <div role="tablist" aria-label="Tuning case studies" className="mt-4 flex gap-2 overflow-x-auto pb-1">
+        {list.map((t, i) => (
+          <button
+            key={t.id}
+            role="tab"
+            aria-selected={i === active}
+            onClick={() => setActive(i)}
+            className={`shrink-0 rounded-full border px-3 py-1.5 font-mono text-xs transition-colors ${
+              i === active ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {t.tab}
+          </button>
+        ))}
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={group + c.id}
+          role="tabpanel"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.35, ease: EASE }}
+          className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]"
+        >
+          <div className="rounded-xl border border-border bg-card/60 p-4">
+            <h3 className="mb-3 font-semibold">{c.title}</h3>
+            <div className="h-64">
+              {c.chart.kind === "series" ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={noiseSeries}>
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+                    <XAxis dataKey="hour" stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(h) => `${h}:00`} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: 12 }} />
+                    <Area type="monotone" dataKey="before" name="before (alerts/h)" stroke="var(--danger)" fill="var(--danger)" fillOpacity={0.15} />
+                    <Area type="monotone" dataKey="after" name="after (alerts/h)" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.25} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : c.chart.kind === "steps" ? (
+                <ol className="flex h-full flex-col justify-center gap-3">
+                  {c.chart.steps.map((st, i) => (
+                    <motion.li
+                      key={st}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, ease: EASE, delay: 0.1 + i * 0.1 }}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-background/40 px-3 py-2.5 text-sm"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-mono text-xs text-primary">{i + 1}</span>
+                      {st}
+                    </motion.li>
+                  ))}
+                </ol>
+              ) : (
+                <div className="flex h-full flex-col justify-center gap-5">
+                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{c.chart.unit}</p>
+                  {c.chart.bars.map((b, i) => (
+                    <div key={b.label}>
+                      <div className="mb-1.5 flex justify-between text-sm">
+                        <span className="text-muted-foreground">{b.label}</span>
+                        <span className="font-mono">{b.value}%</span>
+                      </div>
+                      <div className="h-3 overflow-hidden rounded-full bg-border/60">
+                        <motion.div
+                          className={`h-full rounded-full ${b.tone === "danger" ? "bg-danger" : b.tone === "primary" ? "bg-primary" : "bg-muted-foreground/50"}`}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.max(b.value, 0.6)}%` }}
+                          transition={{ duration: 0.9, ease: EASE, delay: 0.1 + i * 0.12 }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border bg-card/60 p-4">
+              <div className="font-mono text-2xl font-bold text-primary">{c.metric.value}</div>
+              <div className="text-sm text-muted-foreground">{c.metric.label}</div>
+            </div>
+            {([["problem", c.problem], ["finding", c.finding], ["fix", c.fix]] as const).map(([k, v]) => (
+              <div key={k} className="rounded-lg border border-border bg-card/60 p-4">
+                <div className="font-mono text-xs uppercase tracking-widest text-primary">{k}</div>
+                <p className="mt-1 text-sm text-muted-foreground">{v}</p>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </section>
   )
 }
