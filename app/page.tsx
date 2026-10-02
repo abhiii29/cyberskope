@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { ArrowRight, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, ShieldCheck, Terminal, X } from "lucide-react"
-import { logSources, noiseSeries, tuningCases, tuningPatterns, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
+import { logSources, noiseSeries, tuningCases, tuningPatterns, type TuningCase, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
 import { sendContactEmail } from "@/app/actions/contact"
 import { RuleTranslator } from "@/components/rule-lab"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -478,9 +478,9 @@ function Detection() {
           transition={{ duration: 0.35, ease: EASE }}
           className="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]"
         >
-          <div className="rounded-xl border border-border bg-card/60 p-4">
+          <div className="flex flex-col rounded-xl border border-border bg-card/60 p-4">
             <h3 className="mb-3 font-semibold">{c.title}</h3>
-            <div className="h-64">
+            <div className="min-h-72 flex-1">
               {c.chart.kind === "series" ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={noiseSeries}>
@@ -493,40 +493,9 @@ function Detection() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : c.chart.kind === "steps" ? (
-                <ol className="flex h-full flex-col justify-center gap-3">
-                  {c.chart.steps.map((st, i) => (
-                    <motion.li
-                      key={st}
-                      initial={{ opacity: 0, x: -12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.5, ease: EASE, delay: 0.1 + i * 0.1 }}
-                      className="flex items-center gap-3 rounded-lg border border-border bg-background/40 px-3 py-2.5 text-sm"
-                    >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-mono text-xs text-primary">{i + 1}</span>
-                      {st}
-                    </motion.li>
-                  ))}
-                </ol>
+                <FilterPipeline steps={c.chart.steps} out={c.chart.out} />
               ) : (
-                <div className="flex h-full flex-col justify-center gap-5">
-                  <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{c.chart.unit}</p>
-                  {c.chart.bars.map((b, i) => (
-                    <div key={b.label}>
-                      <div className="mb-1.5 flex justify-between text-sm">
-                        <span className="text-muted-foreground">{b.label}</span>
-                        <span className="font-mono">{b.value}%</span>
-                      </div>
-                      <div className="h-3 overflow-hidden rounded-full bg-border/60">
-                        <motion.div
-                          className={`h-full rounded-full ${b.tone === "danger" ? "bg-danger" : b.tone === "primary" ? "bg-primary" : "bg-muted-foreground/50"}`}
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.max(b.value, 0.6)}%` }}
-                          transition={{ duration: 0.9, ease: EASE, delay: 0.1 + i * 0.12 }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <CaseChart chart={c.chart} />
               )}
             </div>
           </div>
@@ -546,6 +515,133 @@ function Detection() {
       </AnimatePresence>
     </section>
   )
+}
+
+// Animated "alert funnel": events stream in at the top, benign ones peel off
+// at each stage, and only the real signal reaches the bottom. Illustrative only.
+const DOTS = Array.from({ length: 14 }, (_, i) => ({ drop: i % 7 === 3 ? 4 : i % 4, x: 30 + ((i * 37) % 40), delay: i * 0.42 }))
+
+function FilterPipeline({ steps, out }: { steps: { label: string; check: string }[]; out: string }) {
+  const reduce = useReducedMotion()
+  const n = steps.length
+  const rowY = (i: number) => 8 + (i + 0.5) * (84 / n) // % of the funnel's height
+  return (
+    <div className="grid h-full grid-cols-[96px_1fr] gap-4 sm:grid-cols-[140px_1fr]">
+      <div className="relative">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          <defs>
+            <linearGradient id="funnel" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="var(--danger)" stopOpacity="0.3" />
+            </linearGradient>
+          </defs>
+          <path d="M8 2 L92 2 L60 90 L60 98 L40 98 L40 90 Z" fill="url(#funnel)" stroke="var(--border)" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
+          {steps.map((_, i) => (
+            <line key={i} x1="0" x2="100" y1={rowY(i)} y2={rowY(i)} stroke="var(--primary)" strokeOpacity="0.35" strokeDasharray="2 2" vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+        {!reduce &&
+          DOTS.map((d, i) => {
+            const real = d.drop === 4
+            const stopY = real ? 96 : rowY(d.drop)
+            return (
+              <motion.span
+                key={i}
+                className={`absolute h-2 w-2 -translate-x-1/2 rounded-full ${real ? "bg-danger shadow-[0_0_10px_var(--danger)]" : "bg-primary"}`}
+                initial={{ left: `${d.x}%`, top: "0%", opacity: 0 }}
+                animate={{
+                  top: ["0%", `${stopY}%`, `${stopY}%`],
+                  left: [`${d.x}%`, real ? "50%" : `${d.x}%`, real ? "50%" : `${d.x < 50 ? -6 : 106}%`],
+                  opacity: [0, 1, real ? 1 : 0],
+                }}
+                transition={{ duration: 3, times: [0, 0.75, 1], ease: "easeIn", repeat: Infinity, delay: d.delay }}
+              />
+            )
+          })}
+      </div>
+      <ol className="flex flex-col justify-around gap-2">
+        {steps.map((st, i) => (
+          <motion.li
+            key={st.label}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: EASE, delay: 0.1 + i * 0.1 }}
+            className="rounded-lg border border-border bg-background/40 px-3 py-2"
+          >
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-mono text-xs text-primary">0{i + 1}</span>
+              {st.label}
+            </div>
+            <code className="mt-1 block truncate font-mono text-xs text-muted-foreground">{st.check}</code>
+          </motion.li>
+        ))}
+        <motion.li
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: EASE, delay: 0.1 + n * 0.1 }}
+          className="flex items-center gap-2 rounded-lg border border-danger/50 bg-danger/10 px-3 py-2 text-sm"
+        >
+          <span className="h-2 w-2 animate-pulse rounded-full bg-danger" />
+          <span className="font-mono text-xs uppercase tracking-widest text-danger">signal</span>
+          <span className="text-muted-foreground">→ {out}</span>
+        </motion.li>
+      </ol>
+    </div>
+  )
+}
+
+const TONE = { danger: "var(--danger)", primary: "var(--primary)", muted: "var(--muted-foreground)" }
+const TIP = { background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)", fontSize: 12 }
+
+function CaseChart({ chart }: { chart: TuningCase["chart"] }) {
+  if (chart.kind === "donut")
+    return (
+      <div className="relative h-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={chart.slices} dataKey="value" nameKey="label" innerRadius="58%" outerRadius="85%" paddingAngle={2} stroke="none" startAngle={90} endAngle={-270}>
+              {chart.slices.map((sl) => <Cell key={sl.label} fill={TONE[sl.tone]} fillOpacity={sl.tone === "muted" ? 0.4 : 0.9} />)}
+            </Pie>
+            <Tooltip contentStyle={TIP} formatter={(v) => `${v}%`} />
+            <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-x-0 top-[42%] -translate-y-1/2 text-center">
+          <div className="font-mono text-3xl font-bold">{chart.slices[0].value}%</div>
+          <div className="text-xs text-muted-foreground">{chart.unit}</div>
+        </div>
+      </div>
+    )
+  if (chart.kind === "stacked")
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chart.rows} layout="vertical" barSize={36} margin={{ left: 8, right: 24 }}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" horizontal={false} />
+          <XAxis type="number" domain={[0, 100]} unit="%" stroke="var(--muted-foreground)" fontSize={12} />
+          <YAxis type="category" dataKey="label" stroke="var(--muted-foreground)" fontSize={12} width={56} />
+          <Tooltip contentStyle={TIP} cursor={{ fill: "var(--border)", opacity: 0.3 }} formatter={(v) => `${v}%`} />
+          <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+          <Bar dataKey="keep" name={chart.keep} stackId="r" fill="var(--primary)" fillOpacity={0.85} />
+          <Bar dataKey="lose" name={chart.lose} stackId="r" fill="var(--danger)" fillOpacity={0.7} radius={[0, 6, 6, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  if (chart.kind === "bars")
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chart.bars} barSize={72} margin={{ top: 24 }}>
+          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="label" stroke="var(--muted-foreground)" fontSize={12} />
+          <YAxis domain={[0, 100]} unit="%" stroke="var(--muted-foreground)" fontSize={12} />
+          <Tooltip contentStyle={TIP} cursor={{ fill: "var(--border)", opacity: 0.3 }} formatter={(v) => [`${v}%`, chart.unit]} />
+          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+            {chart.bars.map((b) => <Cell key={b.label} fill={TONE[b.tone]} fillOpacity={0.85} />)}
+            <LabelList dataKey="value" position="top" formatter={(v: number) => `${v}%`} fill="var(--foreground)" fontSize={12} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    )
+  return null
 }
 
 function Lab() {
