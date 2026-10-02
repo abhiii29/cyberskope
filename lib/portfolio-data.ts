@@ -183,6 +183,7 @@ export const logSources = [
 
 // Tuning case studies for the detection section. Every figure comes from real
 // work; bars compare shares of the same population (before = 100).
+export type Tone = "danger" | "primary" | "muted"
 export type TuningCase = {
   id: string
   tab: string
@@ -191,7 +192,12 @@ export type TuningCase = {
   finding: string
   fix: string
   metric: { value: string; label: string }
-  chart: { kind: "series" } | { kind: "steps"; steps: string[] } | { kind: "bars"; unit: string; bars: { label: string; value: number; tone: "danger" | "primary" | "muted" }[] }
+  chart:
+    | { kind: "series" }
+    | { kind: "steps"; steps: { label: string; check: string }[]; out: string }
+    | { kind: "donut"; unit: string; slices: { label: string; value: number; tone: Tone }[] }
+    | { kind: "stacked"; unit: string; keep: string; lose: string; rows: { label: string; keep: number; lose: number }[] }
+    | { kind: "bars"; unit: string; bars: { label: string; value: number; tone: Tone }[] }
 }
 
 export const tuningCases: TuningCase[] = [
@@ -214,9 +220,9 @@ export const tuningCases: TuningCase[] = [
     fix: "Baselined the exact job (command, user, schedule) instead of muting the rule wholesale.",
     metric: { value: "73%", label: "of the rule's alerts from one job" },
     chart: {
-      kind: "bars",
-      unit: "% of alerts",
-      bars: [
+      kind: "donut",
+      unit: "share of the rule's alerts",
+      slices: [
         { label: "root cron job", value: 73, tone: "danger" },
         { label: "everything else", value: 27, tone: "primary" },
       ],
@@ -248,11 +254,13 @@ export const tuningCases: TuningCase[] = [
     fix: "Re-emitted the audit log as its own event, rebuilt the listener as a unit-tested Python module deployed by Ansible, and wrote a re-ingestion tool that restores missing alerts without duplicates.",
     metric: { value: "~87%", label: "of each record restored" },
     chart: {
-      kind: "bars",
-      unit: "% of each record indexed",
-      bars: [
-        { label: "before", value: 13, tone: "danger" },
-        { label: "after", value: 100, tone: "primary" },
+      kind: "stacked",
+      unit: "share of each audit record",
+      keep: "indexed",
+      lose: "truncated",
+      rows: [
+        { label: "before", keep: 13, lose: 87 },
+        { label: "after", keep: 100, lose: 0 },
       ],
     },
   },
@@ -265,9 +273,9 @@ export const tuningCases: TuningCase[] = [
     fix: "Kept the baselines in git, reviewed by analysts, so triage and the read-only agent only surface what's new.",
     metric: { value: "98%", label: "of alert volume known benign" },
     chart: {
-      kind: "bars",
-      unit: "% of alert volume",
-      bars: [
+      kind: "donut",
+      unit: "share of alert volume",
+      slices: [
         { label: "known benign (baselined)", value: 98, tone: "muted" },
         { label: "left to triage", value: 2, tone: "primary" },
       ],
@@ -286,7 +294,7 @@ export const tuningPatterns: TuningCase[] = [
     finding: "Legitimate tools open LSASS with narrow access masks; dumpers ask for read-memory rights like 0x1010 or 0x1410.",
     fix: "Filter on GrantedAccess plus signed, path-pinned source images, never on the process name alone.",
     metric: { value: "Access mask", label: "is the signal, not the process name" },
-    chart: { kind: "steps", steps: ["Group alerts by SourceImage", "Check the signer and install path", "Exclude only exact path + signer + mask", "Keep everything else at high severity"] },
+    chart: { kind: "steps", out: "credential-dump alert", steps: [{ label: "Group alerts by SourceImage", check: "group by SourceImage" }, { label: "Check the signer and install path", check: "signer ∈ trusted ∧ path pinned" }, { label: "Exclude only exact path + signer + mask", check: "drop GrantedAccess ∈ {0x1000, 0x1400}" }, { label: "Keep everything else at high severity", check: "severity: high" }] },
   },
   {
     id: "encoded",
@@ -296,7 +304,7 @@ export const tuningPatterns: TuningCase[] = [
     finding: "The benign runs share a parent process, a service account and a small set of script hashes.",
     fix: "Allowlist on parent + user + decoded content hash, and decode the payload into the alert so analysts see it.",
     metric: { value: "Parent + hash", label: "beats command-line allowlists" },
-    chart: { kind: "steps", steps: ["Decode the Base64 payload at ingest", "Cluster by parent process and user", "Pin benign clusters by content hash", "Alert on anything new or modified"] },
+    chart: { kind: "steps", out: "suspicious script alert", steps: [{ label: "Decode the Base64 payload at ingest", check: "b64decode(CommandLine)" }, { label: "Cluster by parent process and user", check: "group by ParentImage, User" }, { label: "Pin benign clusters by content hash", check: "drop sha256(script) ∈ allowlist" }, { label: "Alert on anything new or modified", check: "new or modified → alert" }] },
   },
   {
     id: "travel",
@@ -306,7 +314,7 @@ export const tuningPatterns: TuningCase[] = [
     finding: "Geo-IP alone can't tell a corporate egress from an attacker; ASN and known-egress context can.",
     fix: "Enrich sign-ins with ASN and a maintained egress list, and raise severity only when it pairs with MFA changes or new devices.",
     metric: { value: "Context", label: "turns geo noise into a signal" },
-    chart: { kind: "steps", steps: ["Enrich with ASN and egress lists", "Drop known corporate egress pairs", "Correlate with MFA and device changes", "Escalate only the correlated cases"] },
+    chart: { kind: "steps", out: "account takeover case", steps: [{ label: "Enrich with ASN and egress lists", check: "enrich ASN, egress list" }, { label: "Drop known corporate egress pairs", check: "drop known egress pairs" }, { label: "Correlate with MFA and device changes", check: "join MFA / device changes" }, { label: "Escalate only the correlated cases", check: "correlated → escalate" }] },
   },
   {
     id: "brute",
@@ -316,7 +324,7 @@ export const tuningPatterns: TuningCase[] = [
     finding: "The same account, host and failure reason repeat on a schedule; real spraying hits many accounts from one source.",
     fix: "Aggregate by source across accounts for spraying, and route stale-credential failures to the owning team as a ticket.",
     metric: { value: "Aggregate", label: "by source, not per account" },
-    chart: { kind: "steps", steps: ["Split by failure sub-status", "Detect spraying: one source, many accounts", "Ticket repeated service-account failures", "Review the threshold monthly"] },
+    chart: { kind: "steps", out: "password-spray alert", steps: [{ label: "Split by failure sub-status", check: "split by SubStatus" }, { label: "Detect spraying: one source, many accounts", check: "count(users) by src > N" }, { label: "Ticket repeated service-account failures", check: "svc-account repeat → ticket" }, { label: "Review the threshold monthly", check: "review threshold monthly" }] },
   },
   {
     id: "scanner",
@@ -326,6 +334,6 @@ export const tuningPatterns: TuningCase[] = [
     finding: "Scans come from known hosts in known windows, but attackers also love to hide inside that noise.",
     fix: "Tag scanner sources from the asset inventory and lower priority only inside the scan window; outside it, alert as usual.",
     metric: { value: "Scoped", label: "by source and time window" },
-    chart: { kind: "steps", steps: ["Tag scanner IPs from inventory", "Define the scan schedule", "Deprioritise inside the window only", "Alert on scanner IPs outside it"] },
+    chart: { kind: "steps", out: "real recon alert", steps: [{ label: "Tag scanner IPs from inventory", check: "tag src ∈ scanner inventory" }, { label: "Define the scan schedule", check: "in scan window → low" }, { label: "Deprioritise inside the window only", check: "outside window → normal" }, { label: "Alert on scanner IPs outside it", check: "alert as usual" }] },
   },
 ]
