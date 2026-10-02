@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { AnimatePresence, motion } from "motion/react"
-import { ArrowLeft, Braces, FileSearch, Fingerprint, Grid3x3, Languages, Regex, ShieldCheck, Waves } from "lucide-react"
+import { ArrowLeft, Crosshair, Braces, FileSearch, Fingerprint, Grid3x3, Languages, Regex, ShieldCheck, Waves } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { RuleTranslator } from "@/components/rule-lab"
 import { NoiseAnalyser } from "@/components/noise-analyser"
@@ -12,10 +12,11 @@ import { Logtest } from "@/components/logtest"
 import { FieldExtractor } from "@/components/field-extractor"
 import { RegexTester } from "@/components/regex-tester"
 import { IocHelper } from "@/components/ioc-helper"
+import { HuntChallenge } from "@/components/hunt-challenge"
 import { EASE } from "@/components/motion"
 import { labTools, type LabToolId } from "@/lib/lab/tools"
 
-const icons = { translator: Languages, noise: Waves, attack: Grid3x3, logtest: FileSearch, extract: Braces, regex: Regex, ioc: Fingerprint }
+const icons = { translator: Languages, noise: Waves, attack: Grid3x3, logtest: FileSearch, extract: Braces, regex: Regex, ioc: Fingerprint, hunt: Crosshair }
 const views: Record<LabToolId, () => React.ReactElement> = {
   translator: RuleTranslator,
   noise: NoiseAnalyser,
@@ -24,6 +25,7 @@ const views: Record<LabToolId, () => React.ReactElement> = {
   extract: FieldExtractor,
   regex: RegexTester,
   ioc: IocHelper,
+  hunt: HuntChallenge,
 }
 
 export default function LabPage() {

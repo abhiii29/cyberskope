@@ -108,7 +108,7 @@ export function NoiseAnalyser() {
             ))}
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
             {/* Noise makers */}
             <div className="rounded-xl border border-border bg-card/60 p-3">
               <div className="mb-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">top noise makers</div>
