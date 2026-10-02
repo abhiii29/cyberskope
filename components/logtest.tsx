@@ -26,7 +26,7 @@ export function Logtest() {
         </Panel>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Panel title="phases">
           <ol className="space-y-1.5 p-3">
             {r.trace.map((s, i) => (

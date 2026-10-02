@@ -16,9 +16,9 @@ const toneCls = { cmd: "text-foreground", ok: "text-primary", warn: "text-warn",
 const tonePrefix = { cmd: "", ok: "✓ ", warn: "! ", err: "✗ ", llm: "◆ ", dim: "  " }
 const sevCls = { High: "border-danger/50 bg-danger/10 text-danger", Medium: "border-warn/50 bg-warn/10 text-warn", Info: "border-border bg-background/40 text-muted-foreground" }
 
-export function AgentSim({ steps, onClose }: { steps: Step[]; onClose: () => void }) {
+export function AgentSim({ steps, onClose, initialScenario }: { steps: Step[]; onClose: () => void; initialScenario?: string }) {
   const reduce = useReducedMotion()
-  const [scenarioId, setScenarioId] = useState(scenarios[0].id)
+  const [scenarioId, setScenarioId] = useState(scenarios.some((x) => x.id === initialScenario) ? initialScenario! : scenarios[0].id)
   const scenario = scenarios.find((x) => x.id === scenarioId)!
   const [decisions, setDecisions] = useState<Decisions>(reduce ? defaultDecisions : {})
   const [reasons, setReasons] = useState<Reasons>({})

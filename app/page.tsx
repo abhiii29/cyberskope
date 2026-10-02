@@ -6,6 +6,9 @@ import { ArrowRight, Play, UserCheck, Bot, ChevronDown, Cpu, Database, GitBranch
 import { logSources, noiseSeries, tuningCases, tuningPatterns, type TuningCase, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
 import { sendContactEmail } from "@/app/actions/contact"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useTheme } from "next-themes"
+import { scenarios } from "@/lib/agent-sim"
 import { labTools } from "@/lib/lab/tools"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
@@ -15,6 +18,7 @@ import {
 import { AnimatePresence, useMotionValueEvent } from "motion/react"
 import { BootProvider, useBooted } from "@/components/boot-loader"
 import { AgentSim } from "@/components/agent-sim"
+import { CaseModal } from "@/components/case-modal"
 import { NetworkField } from "@/components/network-field"
 
 const nav = ["work", "agent", "detection", "lab", "journey", "skills", "terminal", "contact"]
@@ -43,7 +47,7 @@ export default function Page() {
       <footer className="relative border-t border-border py-8 text-center font-mono text-xs text-muted-foreground">
         cyberskope.eu · built with Next.js · read-only by design
       </footer>
-      {open && <ProjectModal project={open} onClose={() => setOpen(null)} />}
+      <AnimatePresence>{open && <CaseModal project={open} onClose={() => setOpen(null)} />}</AnimatePresence>
     </main>
     </BootProvider>
   )
@@ -386,38 +390,6 @@ function Work({ onOpen }: { onOpen: (p: Project) => void }) {
   )
 }
 
-function ProjectModal({ project, onClose }: { project: Project; onClose: () => void }) {
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => e.key === "Escape" && onClose()
-    window.addEventListener("keydown", k)
-    return () => window.removeEventListener("keydown", k)
-  }, [onClose])
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-border bg-card p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <span className="font-mono text-xs text-muted-foreground">{project.tag}</span>
-            <h3 className="mt-1 text-2xl font-bold">{project.title}</h3>
-          </div>
-          <button onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-muted"><X className="h-5 w-5" /></button>
-        </div>
-        <p className="mt-3 text-muted-foreground">{project.summary}</p>
-        <ul className="mt-6 space-y-3">
-          {project.details.map((d) => (
-            <li key={d} className="flex gap-3 text-sm"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />{d}</li>
-          ))}
-        </ul>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {project.stack.map((s) => (
-            <span key={s} className="rounded border border-border px-2 py-1 font-mono text-xs text-muted-foreground">{s}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 const agentSteps = [
   { icon: Database, title: "Collect", body: "Code aggregates 24h of alerts per instance and diffs against a Git-reviewed baseline and last week." },
   { icon: Cpu, title: "Facts JSON", body: "Millions of alerts become a few KB of exact facts. No raw logs in the prompt." },
@@ -469,7 +441,13 @@ function AgentFlow({ active }: { active: number }) {
 
 function Agent() {
   const [active, setActive] = useState(0)
-  const [sim, setSim] = useState(false)
+  const [sim, setSim] = useState<string | false>(false)
+  // The terminal's `sim <scenario>` command opens the replay through this event.
+  useEffect(() => {
+    const open = (e: Event) => setSim((e as CustomEvent<string>).detail || "incident")
+    window.addEventListener("cyberskope:sim", open)
+    return () => window.removeEventListener("cyberskope:sim", open)
+  }, [])
   const reduce = useReducedMotion()
   const pinRef = useRef<HTMLDivElement>(null)
   // The step list stays pinned while scrolling through the section; scroll position picks the step.
@@ -553,7 +531,7 @@ function Agent() {
         </div>
         <div className="mt-8 flex flex-col items-center gap-2 text-center">
           <button
-            onClick={() => setSim(true)}
+            onClick={() => setSim("incident")}
             className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-primary/60 bg-primary/10 px-6 py-3 font-mono text-sm text-primary transition hover:bg-primary hover:text-primary-foreground"
           >
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
@@ -561,7 +539,7 @@ function Agent() {
           </button>
           <span className="font-mono text-[11px] text-muted-foreground">five scenarios · you make the analyst calls · synthetic data</span>
         </div>
-        <AnimatePresence>{sim && <AgentSim steps={agentSteps} onClose={() => setSim(false)} />}</AnimatePresence>
+        <AnimatePresence>{sim && <AgentSim steps={agentSteps} initialScenario={sim} onClose={() => setSim(false)} />}</AnimatePresence>
       </div>
     </section>
   )
@@ -922,48 +900,183 @@ function Skills() {
   )
 }
 
-const commands: Record<string, string> = {
-  help: "commands: whoami, stack, projects, agent, stats, contact, clear",
+// Shell for the portfolio: static commands print text, the rest navigate.
+const SECTIONS = ["work", "agent", "detection", "lab", "journey", "skills", "terminal", "contact"]
+const staticOut: Record<string, string> = {
   whoami: "Security engineer. SIEM platform + detection engineering, 4+ years. Name withheld for now.",
   stack: Object.entries(skills).map(([k, v]) => `${k.padEnd(12)} ${v.slice(0, 4).join(", ")}`).join("\n"),
-  projects: projects.map((p) => `- ${p.title}: ${p.metric.value} ${p.metric.label}`).join("\n"),
-  agent: "facts JSON → LLM triage → read-only MCP drill-down → validation → daily report.\nNo external LLM API. Every tool call audit-logged.",
+  projects: projects.map((p) => `${p.id.padEnd(11)} ${p.title}: ${p.metric.value} ${p.metric.label}`).join("\n"),
+  agent: "facts JSON → LLM triage → read-only MCP drill-down → validation → human review → report + tickets.\nNo external LLM API. Every tool call audit-logged. Try: sim injection",
   stats: stats.map((s) => `${s.value}${s.suffix} ${s.label}`).join("\n"),
-  contact: "scroll down, or: echo hello > #contact",
+  contact: "open contact   (or scroll to the bottom)",
   "sudo rm -rf /": "nice try. this terminal is read-only by design. 🔒",
+}
+const HELP = `navigation
+  ls                    list sections, case studies and tools
+  open <section>        scroll to a section (${SECTIONS.join(", ")})
+  cat <case>            print a case study (see: ls cases)
+  lab [tool]            open the lab, optionally at a tool
+  hunt                  start the detection challenge
+  sim [scenario]        replay the agent run (${scenarios.map((x) => x.id).join(", ")})
+info
+  whoami  stack  projects  agent  stats  contact
+shell
+  theme dark|light  history  echo <text>  clear
+tab completes · ↑ ↓ walk history`
+
+const commandNames = ["help", "ls", "open", "cat", "lab", "hunt", "sim", "theme", "history", "echo", "clear", ...Object.keys(staticOut)]
+
+function complete(input: string): string[] {
+  const [cmd, ...rest] = input.split(" ")
+  if (!rest.length) return commandNames.filter((c) => c.startsWith(cmd))
+  const arg = rest.join(" ")
+  const opts: Record<string, string[]> = {
+    open: SECTIONS,
+    cat: projects.map((p) => p.id),
+    lab: labTools.map((t) => t.id),
+    sim: scenarios.map((x) => x.id),
+    theme: ["dark", "light", "system"],
+    ls: ["sections", "cases", "tools"],
+  }
+  return (opts[cmd] ?? []).filter((o) => o.startsWith(arg)).map((o) => `${cmd} ${o}`)
 }
 
 function InteractiveTerminal() {
-  const [hist, setHist] = useState<{ cmd: string; out: string }[]>([{ cmd: "help", out: commands.help }])
+  const router = useRouter()
+  const { setTheme } = useTheme()
+  const [hist, setHist] = useState<{ cmd: string; out: string }[]>([{ cmd: "help", out: HELP }])
+  const [past, setPast] = useState<string[]>([])
+  const [cursor, setCursor] = useState(-1)
   const [val, setVal] = useState("")
+  const [suggest, setSuggest] = useState<string[]>([])
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (box.current) box.current.scrollTop = box.current.scrollHeight
-  }, [hist])
+  }, [hist, suggest])
+
+  const exec = (line: string): string | null => {
+    const [cmd, ...args] = line.split(/\s+/)
+    const arg = args.join(" ")
+    switch (cmd) {
+      case "help":
+        return HELP
+      case "ls":
+        if (arg === "cases") return projects.map((p) => `${p.id.padEnd(11)} ${p.title}`).join("\n")
+        if (arg === "tools") return labTools.map((t) => `${t.id.padEnd(11)} ${t.name}`).join("\n")
+        if (arg === "sections" || !arg) return `sections/  ${SECTIONS.join("  ")}\ncases/     ${projects.map((p) => p.id).join("  ")}\ntools/     ${labTools.map((t) => t.id).join("  ")}`
+        return `ls: ${arg}: no such directory`
+      case "open": {
+        const el = SECTIONS.includes(arg) && document.getElementById(arg)
+        if (!el) return `open: unknown section '${arg}'. try: ${SECTIONS.join(", ")}`
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 150)
+        return `→ #${arg}`
+      }
+      case "cat": {
+        const p = projects.find((x) => x.id === arg)
+        if (!p) return `cat: ${arg || "(missing)"}: no such case. try: ls cases`
+        return [`# ${p.title}  (${p.tag})`, p.summary, "", ...p.details.map((d) => `- ${d}`), "", `metric: ${p.metric.value} ${p.metric.label}`, `stack:  ${p.stack.join(", ")}`].join("\n")
+      }
+      case "lab": {
+        if (arg && !labTools.some((t) => t.id === arg)) return `lab: unknown tool '${arg}'. try: ls tools`
+        router.push(arg ? `/lab?tool=${arg}` : "/lab")
+        return `opening /lab${arg ? `?tool=${arg}` : ""} …`
+      }
+      case "hunt":
+        router.push("/lab?tool=hunt")
+        return "loading 224 events… good hunting."
+      case "sim": {
+        const id = arg || "incident"
+        if (!scenarios.some((x) => x.id === id)) return `sim: unknown scenario '${id}'. try: ${scenarios.map((x) => x.id).join(", ")}`
+        window.dispatchEvent(new CustomEvent("cyberskope:sim", { detail: id }))
+        return `starting simulated run: ${scenarios.find((x) => x.id === id)!.name}`
+      }
+      case "theme":
+        if (!["dark", "light", "system"].includes(arg)) return "usage: theme dark|light|system"
+        setTheme(arg)
+        return `theme → ${arg}`
+      case "history":
+        return past.map((p, i) => `${String(i + 1).padStart(3)}  ${p}`).join("\n") || "(empty)"
+      case "echo":
+        return arg.replace(/\s*>\s*#?contact$/, "") + (/>\s*#?contact$/.test(arg) ? "\n(nice. the real form is at the bottom: open contact)" : "")
+      case "clear":
+        setHist([])
+        return null
+      default:
+        return staticOut[line] ?? `command not found: ${cmd} (try 'help')`
+    }
+  }
+
   const run = (e: React.FormEvent) => {
     e.preventDefault()
     const c = val.trim()
+    setSuggest([])
     if (!c) return
-    if (c === "clear") setHist([])
-    else setHist((h) => [...h, { cmd: c, out: commands[c] ?? `command not found: ${c} (try 'help')` }])
+    setPast((p) => [...p, c])
+    setCursor(-1)
+    const out = exec(c)
+    if (out !== null) setHist((h) => [...h, { cmd: c, out }])
     setVal("")
   }
+
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Tab") {
+      e.preventDefault()
+      const m = complete(val)
+      if (m.length === 1) (setVal(m[0] + " "), setSuggest([]))
+      else if (m.length > 1) {
+        // Extend to the longest common prefix, then list the options.
+        const lcp = m.reduce((a, b) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return a.slice(0, i) })
+        setVal(lcp)
+        setSuggest(m)
+      }
+    } else if (e.key === "ArrowUp" && past.length) {
+      e.preventDefault()
+      const i = cursor < 0 ? past.length - 1 : Math.max(0, cursor - 1)
+      setCursor(i)
+      setVal(past[i])
+    } else if (e.key === "ArrowDown" && cursor >= 0) {
+      e.preventDefault()
+      const i = cursor + 1
+      if (i >= past.length) (setCursor(-1), setVal(""))
+      else (setCursor(i), setVal(past[i]))
+    } else if (e.key === "l" && e.ctrlKey) {
+      e.preventDefault()
+      setHist([])
+    }
+  }
+
   return (
     <section className="relative border-y border-border bg-card/30">
       <div className="mx-auto max-w-4xl px-4 py-24">
-        <SectionHead id="terminal" kicker="07 · shell" title="Prefer a terminal?" />
+        <SectionHead id="terminal" kicker="07 · shell" title="Prefer a terminal?" sub="Everything on this site is reachable from here. Tab completes, arrows walk history." />
         <div className="mt-8 rounded-xl border border-border bg-background shadow-2xl" onClick={() => document.getElementById("term-in")?.focus()}>
-          <div className="border-b border-border px-4 py-2 font-mono text-xs text-muted-foreground">guest@cyberskope:~</div>
-          <div ref={box} className="h-80 overflow-y-auto p-4 font-mono text-sm">
+          <div className="flex items-center gap-2 border-b border-border px-4 py-2 font-mono text-xs text-muted-foreground">
+            <span className="h-2.5 w-2.5 rounded-full bg-danger/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-warn/70" />
+            <span className="h-2.5 w-2.5 rounded-full bg-primary/70" />
+            <span className="ml-2">guest@cyberskope:~</span>
+          </div>
+          <div ref={box} className="h-96 overflow-y-auto p-4 font-mono text-sm">
             {hist.map((h, i) => (
               <div key={i} className="mb-3">
                 <div><span className="text-primary">$</span> {h.cmd}</div>
                 <pre className="whitespace-pre-wrap text-muted-foreground">{h.out}</pre>
               </div>
             ))}
+            {suggest.length > 0 && <div className="mb-2 flex flex-wrap gap-x-4 text-xs text-violet">{suggest.map((x) => <span key={x}>{x}</span>)}</div>}
             <form onSubmit={run} className="flex gap-2">
               <span className="text-primary">$</span>
-              <input id="term-in" value={val} onChange={(e) => setVal(e.target.value)} autoComplete="off" className="flex-1 bg-transparent outline-none" aria-label="terminal input" />
+              <input
+                id="term-in"
+                value={val}
+                onChange={(e) => (setVal(e.target.value), setSuggest([]))}
+                onKeyDown={onKey}
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                className="flex-1 bg-transparent outline-none"
+                aria-label="terminal input"
+              />
             </form>
           </div>
         </div>

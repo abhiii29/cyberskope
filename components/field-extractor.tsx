@@ -16,7 +16,7 @@ export function FieldExtractor() {
       <Panel title="raw log line" actions={<SampleSelect items={samples} onPick={(s) => setLine(s.line)} />}>
         <textarea value={line} onChange={(e) => setLine(e.target.value)} spellCheck={false} aria-label="Raw log" className={`${area} min-h-24`} />
       </Panel>
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Panel
           title={
             <span>

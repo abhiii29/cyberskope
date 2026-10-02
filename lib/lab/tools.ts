@@ -1,4 +1,4 @@
-export type LabToolId = "translator" | "noise" | "attack" | "logtest" | "extract" | "regex" | "ioc"
+export type LabToolId = "translator" | "noise" | "attack" | "logtest" | "extract" | "regex" | "ioc" | "hunt"
 
 export const labTools: { id: LabToolId; name: string; short: string; long: string }[] = [
   {
@@ -42,5 +42,11 @@ export const labTools: { id: LabToolId; name: string; short: string; long: strin
     name: "IOC extractor",
     short: "Refang, extract, de-duplicate, defang",
     long: "Paste a report, ticket or chat thread. It refangs the usual obfuscations, pulls out URLs, domains, IPs, emails, hashes and CVEs, flags private and internal ranges, and gives you a clean defanged list or CSV.",
+  },
+  {
+    id: "hunt",
+    name: "Find the intrusion",
+    short: "A detection challenge scored on precision and recall",
+    long: "A synthetic day of Windows process events with three planted attacks hiding among look-alike admin activity. Write a Sigma rule per level; it's scored on what it catches and what it falsely flags.",
   },
 ]
