@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, LabelList, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { ArrowRight, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, ShieldCheck, Terminal, X } from "lucide-react"
+import { ArrowRight, Play, UserCheck, Bot, ChevronDown, Cpu, Database, GitBranch, Lock, Mail, ShieldCheck, Terminal, X } from "lucide-react"
 import { logSources, noiseSeries, tuningCases, tuningPatterns, type TuningCase, projects, skills, stats, timeline, type Project } from "@/lib/portfolio-data"
 import { sendContactEmail } from "@/app/actions/contact"
 import Link from "next/link"
@@ -14,6 +14,7 @@ import {
 } from "@/components/motion"
 import { AnimatePresence, useMotionValueEvent } from "motion/react"
 import { BootProvider, useBooted } from "@/components/boot-loader"
+import { AgentSim } from "@/components/agent-sim"
 import { NetworkField } from "@/components/network-field"
 
 const nav = ["work", "agent", "detection", "lab", "journey", "skills", "terminal", "contact"]
@@ -422,7 +423,8 @@ const agentSteps = [
   { icon: Cpu, title: "Facts JSON", body: "Millions of alerts become a few KB of exact facts. No raw logs in the prompt." },
   { icon: Bot, title: "Agent loop", body: "A self-hosted LLM triages and drills down through read-only MCP tools, max 15 calls." },
   { icon: Lock, title: "Validate", body: "Any number or IP not traceable to a tool result is removed. Unreachable = NOT CHECKED." },
-  { icon: GitBranch, title: "Publish", body: "One report page per day, one ticket per High/Critical finding." },
+  { icon: UserCheck, title: "Human review", body: "An analyst approves, downgrades or dismisses every High finding. Baseline changes are only ever proposed, then reviewed as a PR." },
+  { icon: GitBranch, title: "Publish", body: "One report page per day, one ticket per approved High/Critical finding, deduplicated against open tickets." },
 ]
 
 // The pipeline as a strip of nodes: stages up to the current step light up and
@@ -467,6 +469,7 @@ function AgentFlow({ active }: { active: number }) {
 
 function Agent() {
   const [active, setActive] = useState(0)
+  const [sim, setSim] = useState(false)
   const reduce = useReducedMotion()
   const pinRef = useRef<HTMLDivElement>(null)
   // The step list stays pinned while scrolling through the section; scroll position picks the step.
@@ -548,6 +551,17 @@ function Agent() {
             </div>
           ))}
         </div>
+        <div className="mt-8 flex flex-col items-center gap-2 text-center">
+          <button
+            onClick={() => setSim(true)}
+            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-primary/60 bg-primary/10 px-6 py-3 font-mono text-sm text-primary transition hover:bg-primary hover:text-primary-foreground"
+          >
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/30 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            <Play className="h-4 w-4" /> Watch a simulated run
+          </button>
+          <span className="font-mono text-[11px] text-muted-foreground">five scenarios · you make the analyst calls · synthetic data</span>
+        </div>
+        <AnimatePresence>{sim && <AgentSim steps={agentSteps} onClose={() => setSim(false)} />}</AnimatePresence>
       </div>
     </section>
   )
