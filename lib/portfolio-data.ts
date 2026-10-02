@@ -180,3 +180,152 @@ export const logSources = [
   "Jenkins", "Tailscale", "Rundeck", "Cohesity", "OpenVPN", "Akamai", "GitHub", "Kubernetes audit",
   "RKE2 / Rancher", "ESET PROTECT", "Azure", "Sysmon", "Defender", "PowerShell", "auditd", "Passwork",
 ]
+
+// Tuning case studies for the detection section. Every figure comes from real
+// work; bars compare shares of the same population (before = 100).
+export type TuningCase = {
+  id: string
+  tab: string
+  title: string
+  problem: string
+  finding: string
+  fix: string
+  metric: { value: string; label: string }
+  chart: { kind: "series" } | { kind: "steps"; steps: string[] } | { kind: "bars"; unit: string; bars: { label: string; value: number; tone: "danger" | "primary" | "muted" }[] }
+}
+
+export const tuningCases: TuningCase[] = [
+  {
+    id: "mount",
+    tab: "Mount-syscall storm",
+    title: "A firmware updater flooding a mount-syscall rule",
+    problem: "An auditd mount use case was firing around 194 times an hour and burying analysts.",
+    finding: "Tracing the process lineage showed fwupd, the firmware update daemon, behind the storm.",
+    fix: "Scoped the benign updater out of the rule and sent the RCA to the customer.",
+    metric: { value: "194 → 12", label: "alerts per hour" },
+    chart: { kind: "series" },
+  },
+  {
+    id: "cron",
+    tab: "Root cron job",
+    title: "One cron job behind most of a rule's alerts",
+    problem: "A single auditd use case dominated the alert queue with no obvious attacker pattern.",
+    finding: "Grouping by command line and user showed a minutely root cron job produced 73% of its alerts.",
+    fix: "Baselined the exact job (command, user, schedule) instead of muting the rule wholesale.",
+    metric: { value: "73%", label: "of the rule's alerts from one job" },
+    chart: {
+      kind: "bars",
+      unit: "% of alerts",
+      bars: [
+        { label: "root cron job", value: 73, tone: "danger" },
+        { label: "everything else", value: 27, tone: "primary" },
+      ],
+    },
+  },
+  {
+    id: "suppress",
+    tab: "Reviewed suppressions",
+    title: "96 suppression values, reviewed one by one",
+    problem: "A noisy level-7 population made a use case useless, and blanket suppression would have hidden real changes.",
+    finding: "Each of the 96 candidate values was checked against the evidence before it went into a level-0 rule.",
+    fix: "Environment-scoped levels (prod 12, non-prod 7) keep production changes critical while the reviewed set clears the noise.",
+    metric: { value: "99.1%", label: "of the level-7 population cleared by one step" },
+    chart: {
+      kind: "bars",
+      unit: "% of level-7 alerts",
+      bars: [
+        { label: "before", value: 100, tone: "danger" },
+        { label: "after one suppression step", value: 0.9, tone: "primary" },
+      ],
+    },
+  },
+  {
+    id: "listener",
+    tab: "Truncated audit logs",
+    title: "A listener silently dropping most of every record",
+    problem: "A SaaS vendor's audit trail looked healthy, but detections built on it never fired.",
+    finding: "Comparing raw input to indexed events showed the listener truncated about 87% of each audit record.",
+    fix: "Re-emitted the audit log as its own event, rebuilt the listener as a unit-tested Python module deployed by Ansible, and wrote a re-ingestion tool that restores missing alerts without duplicates.",
+    metric: { value: "~87%", label: "of each record restored" },
+    chart: {
+      kind: "bars",
+      unit: "% of each record indexed",
+      bars: [
+        { label: "before", value: 13, tone: "danger" },
+        { label: "after", value: 100, tone: "primary" },
+      ],
+    },
+  },
+  {
+    id: "baseline",
+    tab: "Baselines in git",
+    title: "Known-benign noise, written down and reviewed",
+    problem: "In one environment, 98% of alert volume was known benign noise, so every review started from scratch.",
+    finding: "Without a shared baseline, people and automation kept rediscovering the same noise every day.",
+    fix: "Kept the baselines in git, reviewed by analysts, so triage and the read-only agent only surface what's new.",
+    metric: { value: "98%", label: "of alert volume known benign" },
+    chart: {
+      kind: "bars",
+      unit: "% of alert volume",
+      bars: [
+        { label: "known benign (baselined)", value: 98, tone: "muted" },
+        { label: "left to triage", value: 2, tone: "primary" },
+      ],
+    },
+  },
+]
+
+// Well-known tuning patterns from public detection practice. These are not from
+// my engagements and carry no measured numbers; the UI labels them as such.
+export const tuningPatterns: TuningCase[] = [
+  {
+    id: "lsass",
+    tab: "LSASS access",
+    title: "Credential-dumping alerts fired by your own security tools",
+    problem: "Sysmon event 10 rules on lsass.exe access fire constantly, mostly from EDR, AV and backup agents.",
+    finding: "Legitimate tools open LSASS with narrow access masks; dumpers ask for read-memory rights like 0x1010 or 0x1410.",
+    fix: "Filter on GrantedAccess plus signed, path-pinned source images, never on the process name alone.",
+    metric: { value: "Access mask", label: "is the signal, not the process name" },
+    chart: { kind: "steps", steps: ["Group alerts by SourceImage", "Check the signer and install path", "Exclude only exact path + signer + mask", "Keep everything else at high severity"] },
+  },
+  {
+    id: "encoded",
+    tab: "Encoded PowerShell",
+    title: "Management agents that look like attackers",
+    problem: "Rules for powershell -EncodedCommand trip on software deployment and device management scripts.",
+    finding: "The benign runs share a parent process, a service account and a small set of script hashes.",
+    fix: "Allowlist on parent + user + decoded content hash, and decode the payload into the alert so analysts see it.",
+    metric: { value: "Parent + hash", label: "beats command-line allowlists" },
+    chart: { kind: "steps", steps: ["Decode the Base64 payload at ingest", "Cluster by parent process and user", "Pin benign clusters by content hash", "Alert on anything new or modified"] },
+  },
+  {
+    id: "travel",
+    tab: "Impossible travel",
+    title: "Users who \"teleport\" through VPNs and cloud proxies",
+    problem: "Impossible-travel sign-in alerts are dominated by VPN exits, mobile carriers and cloud egress IPs.",
+    finding: "Geo-IP alone can't tell a corporate egress from an attacker; ASN and known-egress context can.",
+    fix: "Enrich sign-ins with ASN and a maintained egress list, and raise severity only when it pairs with MFA changes or new devices.",
+    metric: { value: "Context", label: "turns geo noise into a signal" },
+    chart: { kind: "steps", steps: ["Enrich with ASN and egress lists", "Drop known corporate egress pairs", "Correlate with MFA and device changes", "Escalate only the correlated cases"] },
+  },
+  {
+    id: "brute",
+    tab: "Failed logons",
+    title: "Brute-force alerts from stale service credentials",
+    problem: "Windows 4625 threshold rules page analysts for service accounts with expired passwords.",
+    finding: "The same account, host and failure reason repeat on a schedule; real spraying hits many accounts from one source.",
+    fix: "Aggregate by source across accounts for spraying, and route stale-credential failures to the owning team as a ticket.",
+    metric: { value: "Aggregate", label: "by source, not per account" },
+    chart: { kind: "steps", steps: ["Split by failure sub-status", "Detect spraying: one source, many accounts", "Ticket repeated service-account failures", "Review the threshold monthly"] },
+  },
+  {
+    id: "scanner",
+    tab: "Scanner noise",
+    title: "Your vulnerability scanner, detected every week",
+    problem: "Port-scan and exploit-signature rules light up during every authorised vulnerability scan.",
+    finding: "Scans come from known hosts in known windows, but attackers also love to hide inside that noise.",
+    fix: "Tag scanner sources from the asset inventory and lower priority only inside the scan window; outside it, alert as usual.",
+    metric: { value: "Scoped", label: "by source and time window" },
+    chart: { kind: "steps", steps: ["Tag scanner IPs from inventory", "Define the scan schedule", "Deprioritise inside the window only", "Alert on scanner IPs outside it"] },
+  },
+]
