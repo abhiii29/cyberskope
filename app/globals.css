@@ -172,3 +172,16 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Scanner beam over the log-source marquee */
+.scan-beam {
+  background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--primary) 22%, transparent), transparent);
+  animation: scan-beam 6s ease-in-out infinite;
+}
+@keyframes scan-beam {
+  0% { left: -10rem; }
+  100% { left: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-beam { display: none; }
+}
